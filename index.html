@@ -123,7 +123,7 @@
       <p>Magic <span>"RECORDAE"</span> &nbsp;·&nbsp; Total <span>256 bytes</span> &nbsp;·&nbsp; Max Shapes <span>7</span></p>
     </div>
     <div class="title-badges">
-      <span class="tbadge tbadge-g">✓ FINAL</span>
+      <span class="tbadge tbadge-g">✓ V1.0</span>
       <span class="tbadge tbadge-b">BINARY PROTOCOL</span>
     </div>
   </div>
@@ -168,28 +168,28 @@
     <div class="f-row f-magic">
       <div class="fc fc-strip"></div><div class="fc fc-name">Header</div>
       <div class="fc"><span class="pill p-u8">u8</span></div>
-      <div class="fc fc-cnt">8</div><div class="fc"><span class="fc-sz">8 B</span></div>
+      <div class="fc fc-cnt">8</div><div class="fc"><span class="fc-sz">8</span></div>
       <div class="fc fc-note">매직 시그니처 <span class="hl-y">"RECORDAE"</span></div>
     </div>
 
     <div class="f-row f-model">
       <div class="fc fc-strip"></div><div class="fc fc-name">모델</div>
       <div class="fc"><span class="pill p-u8">u8</span></div>
-      <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">1 B</span></div>
+      <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">1</span></div>
       <div class="fc fc-note">라이다 장비 모델 <span class="hl-g">(열거형)</span></div>
     </div>
 
     <div class="f-row f-rsv">
       <div class="fc fc-strip"></div><div class="fc fc-name">reserved</div>
       <div class="fc"><span class="pill p-u8">u8</span></div>
-      <div class="fc fc-cnt">36</div><div class="fc"><span class="fc-sz">36 B</span></div>
+      <div class="fc fc-cnt">36</div><div class="fc"><span class="fc-sz">36</span></div>
       <div class="fc fc-note" style="color:var(--muted)">향후 확장 예약 공간</div>
     </div>
 
     <div class="f-row f-scount">
       <div class="fc fc-strip"></div><div class="fc fc-name">ShapeCount</div>
       <div class="fc"><span class="pill p-u8">u8</span></div>
-      <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">1 B</span></div>
+      <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">1</span></div>
       <div class="fc fc-note">유효 Shape 수 &nbsp;<span class="hl-b">MaxCnt 7</span></div>
     </div>
 
@@ -200,42 +200,42 @@
       <div class="f-row f-shape">
         <div class="fc fc-strip"></div><div class="fc fc-name">Shape</div>
         <div class="fc"><span class="pill p-u8">u8</span></div>
-        <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">1 B</span></div>
+        <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">1</span></div>
         <div class="fc fc-note">데이터 종류 <span class="hl-g">(열거형)</span> — 앰비언트 · 인텐시티 · PCD 등</div>
       </div>
 
       <div class="f-row f-geo">
         <div class="fc fc-strip"></div><div class="fc fc-name">W</div>
         <div class="fc"><span class="pill p-u16">u16</span></div>
-        <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">2 B</span></div>
+        <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">2</span></div>
         <div class="fc fc-note">가로 해상도 <span class="hl-bl">(너비)</span></div>
       </div>
 
       <div class="f-row f-geo">
         <div class="fc fc-strip"></div><div class="fc fc-name">H</div>
         <div class="fc"><span class="pill p-u16">u16</span></div>
-        <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">2 B</span></div>
+        <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">2</span></div>
         <div class="fc fc-note">세로 해상도 <span class="hl-bl">(높이)</span></div>
       </div>
 
       <div class="f-row f-dtype">
         <div class="fc fc-strip"></div><div class="fc fc-name">자료형</div>
         <div class="fc"><span class="pill p-u8">u8</span></div>
-        <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">1 B</span></div>
+        <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">1</span></div>
         <div class="fc fc-note">픽셀 값 자료형 <span class="hl-g">(열거형)</span> — uint8~64 · float · double 등</div>
       </div>
 
       <div class="f-row f-comp">
         <div class="fc fc-strip"></div><div class="fc fc-name">압축플래그</div>
         <div class="fc"><span class="pill p-u8">u8</span></div>
-        <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">1 B</span></div>
+        <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">1</span></div>
         <div class="fc fc-note">압축 여부 및 방식 — 복원 시 참조</div>
       </div>
 
       <div class="f-row f-rsv2">
         <div class="fc fc-strip"></div><div class="fc fc-name">reserved</div>
         <div class="fc"><span class="pill p-u8">u8</span></div>
-        <div class="fc fc-cnt">23</div><div class="fc"><span class="fc-sz">23 B</span></div>
+        <div class="fc fc-cnt">23</div><div class="fc"><span class="fc-sz">23</span></div>
         <div class="fc fc-note" style="color:var(--muted)">Shape 내 확장 예약 공간</div>
       </div>
     </div>

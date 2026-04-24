@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>라이다 바이너리 파일 프로토콜</title>
+<title>라이다 바이너리 파일 프로토콜 샘플</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -23,7 +23,6 @@
   }
   .wrap { max-width:860px; margin:0 auto; }
 
-  /* TITLE */
   .title-block { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; gap:10px; flex-wrap:wrap; }
   .title-left h1 {
     font-size:18px; font-weight:900; letter-spacing:-.3px; margin-bottom:3px;
@@ -37,27 +36,26 @@
   .tbadge-g { background:rgba(46,204,143,.15); border:1px solid rgba(46,204,143,.4); color:var(--green); }
   .tbadge-b { background:rgba(0,200,255,.12); border:1px solid rgba(0,200,255,.35); color:var(--accent); }
 
-  /* STATS */
   .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-bottom:12px; }
   .stat { background:var(--s1); border:1px solid var(--border); border-radius:8px; padding:8px 10px; text-align:center; }
   .stat-val { font-family:var(--mono); font-size:20px; font-weight:900; line-height:1.1; }
   .stat-lbl { font-size:10px; color:var(--muted); margin-top:2px; }
 
-  /* BAR */
   .bar-card { background:var(--s1); border:1px solid var(--border); border-radius:10px; padding:12px 16px; margin-bottom:12px; }
   .bar-card-title { font-family:var(--mono); font-size:10px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-bottom:8px; }
   .bar-track { height:26px; background:var(--s2); border-radius:6px; overflow:hidden; display:flex; margin-bottom:10px; }
   .bseg { height:100%; display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:9px; font-weight:700; white-space:nowrap; overflow:hidden; }
-  .bseg-magic  { background:rgba(245,200,66,.55);  color:#1a1400; width:calc(8/256*100%);   min-width:24px; }
-  .bseg-model  { background:rgba(179,157,250,.55); color:#1a1400; width:calc(1/256*100%);   min-width:4px; }
-  .bseg-rsv1   { background:rgba(42,69,112,.85);   color:var(--muted); width:calc(36/256*100%); }
-  .bseg-scount { background:rgba(0,200,255,.55);   color:#001820; width:calc(1/256*100%);   min-width:4px; }
-  .bseg-shapes { background:rgba(46,204,143,.4);   color:var(--text); width:calc(210/256*100%); }
+  .bseg-magic { background:rgba(245,200,66,.55); color:#1a1400; width:calc(8/256*100%); min-width:24px; }
+  .bseg-model { background:rgba(179,157,250,.55); color:#1a1400; width:calc(1/256*100%); min-width:4px; }
+  .bseg-frame { background:rgba(42,69,112,.85); color:var(--muted); width:calc(4/256*100%); min-width:18px; }
+  .bseg-echo { background:rgba(255,107,107,.22); color:#ffd9d9; width:calc(2/256*100%); min-width:18px; }
+  .bseg-rsv1 { background:rgba(42,69,112,.85); color:var(--muted); width:calc(29/256*100%); }
+  .bseg-sflag { background:rgba(0,200,255,.55); color:#001820; width:calc(2/256*100%); min-width:10px; }
+  .bseg-shapes { background:rgba(46,204,143,.4); color:var(--text); width:calc(210/256*100%); }
   .bar-legend { display:flex; flex-wrap:wrap; gap:8px; }
   .leg { display:flex; align-items:center; gap:5px; font-size:10px; color:#b8d4f0; }
   .leg-dot { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
 
-  /* FIELD TABLE */
   .section-label { font-family:var(--mono); font-size:10px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
   .section-label::after { content:''; flex:1; height:1px; background:var(--border); }
 
@@ -69,46 +67,49 @@
   .fc:last-child { border-right:none; }
   .fc-strip { padding:0; border-right:1px solid var(--border); }
 
-  .f-magic  .fc{background:rgba(245,200,66,.06);}  .f-magic  .fc-strip{background:var(--yellow);}
-  .f-model  .fc{background:rgba(179,157,250,.06);} .f-model  .fc-strip{background:var(--purple);}
-  .f-rsv    .fc{background:var(--s1);}              .f-rsv    .fc-strip{background:var(--border);}
-  .f-scount .fc{background:rgba(0,200,255,.06);}   .f-scount .fc-strip{background:var(--accent);}
-  .f-shape  .fc{background:rgba(46,204,143,.06);}  .f-shape  .fc-strip{background:var(--green);}
-  .f-geo    .fc{background:rgba(96,165,250,.05);}  .f-geo    .fc-strip{background:var(--blue);}
-  .f-dtype  .fc{background:rgba(179,157,250,.06);} .f-dtype  .fc-strip{background:var(--purple);}
-  .f-comp   .fc{background:rgba(255,107,107,.06);} .f-comp   .fc-strip{background:var(--red);}
-  .f-rsv2   .fc{background:var(--s1);}              .f-rsv2   .fc-strip{background:var(--border);}
+  .f-magic .fc{background:rgba(245,200,66,.06);} .f-magic .fc-strip{background:var(--yellow);}
+  .f-model .fc{background:rgba(179,157,250,.06);} .f-model .fc-strip{background:var(--purple);}
+  .f-rsv .fc{background:var(--s1);} .f-rsv .fc-strip{background:var(--border);}
+  .f-frame .fc{background:rgba(96,165,250,.05);} .f-frame .fc-strip{background:var(--blue);}
+  .f-echo .fc{background:rgba(255,107,107,.06);} .f-echo .fc-strip{background:var(--red);}
+  .f-sflag .fc{background:rgba(0,200,255,.06);} .f-sflag .fc-strip{background:var(--accent);}
+  .f-shape .fc{background:rgba(46,204,143,.06);} .f-shape .fc-strip{background:var(--green);}
+  .f-geo .fc{background:rgba(96,165,250,.05);} .f-geo .fc-strip{background:var(--blue);}
+  .f-dtype .fc{background:rgba(179,157,250,.06);} .f-dtype .fc-strip{background:var(--purple);}
+  .f-comp .fc{background:rgba(255,107,107,.06);} .f-comp .fc-strip{background:var(--red);}
+  .f-rsv2 .fc{background:var(--s1);} .f-rsv2 .fc-strip{background:var(--border);}
 
-  .f-magic  .fc-name{color:var(--yellow);}  .f-model  .fc-name{color:var(--purple);}
-  .f-rsv    .fc-name{color:var(--muted);}   .f-scount .fc-name{color:var(--accent);}
-  .f-shape  .fc-name{color:var(--green);}   .f-geo    .fc-name{color:var(--blue);}
-  .f-dtype  .fc-name{color:var(--purple);}  .f-comp   .fc-name{color:var(--red);}
-  .f-rsv2   .fc-name{color:var(--muted);}
+  .f-magic .fc-name{color:var(--yellow);} .f-model .fc-name{color:var(--purple);}
+  .f-rsv .fc-name{color:var(--muted);} .f-frame .fc-name{color:var(--blue);}
+  .f-echo .fc-name{color:var(--red);} .f-sflag .fc-name{color:var(--accent);}
+  .f-shape .fc-name{color:var(--green);} .f-geo .fc-name{color:var(--blue);}
+  .f-dtype .fc-name{color:var(--purple);} .f-comp .fc-name{color:var(--red);}
+  .f-rsv2 .fc-name{color:var(--muted);}
 
   .f-head .fc { background:var(--s2); font-family:var(--mono); font-size:9px; letter-spacing:1px; color:var(--muted); text-transform:uppercase; padding:6px 10px; }
 
   .fc-name { font-family:var(--mono); font-weight:700; font-size:12px; }
-  .fc-sz   { font-family:var(--mono); font-weight:700; font-size:12px; color:var(--yellow); }
-  .fc-cnt  { color:#c8ddf5; font-family:var(--mono); font-size:12px; }
+  .fc-sz { font-family:var(--mono); font-weight:700; font-size:12px; color:var(--yellow); }
+  .fc-cnt { color:#c8ddf5; font-family:var(--mono); font-size:12px; }
   .fc-note { font-size:12px; color:#c8ddf5; line-height:1.4; }
   .hl-g{color:var(--green);font-weight:700;} .hl-b{color:var(--accent);font-weight:700;}
   .hl-y{color:var(--yellow);font-weight:700;} .hl-bl{color:var(--blue);font-weight:700;}
+  .hl-r{color:var(--red);font-weight:700;}
 
   .pill { font-family:var(--mono); font-size:10px; font-weight:700; padding:2px 7px; border-radius:5px; }
-  .p-u8  { background:rgba(0,200,255,.15); color:var(--accent); border:1px solid rgba(0,200,255,.3); }
+  .p-u8 { background:rgba(0,200,255,.15); color:var(--accent); border:1px solid rgba(0,200,255,.3); }
   .p-u16 { background:rgba(96,165,250,.18); color:var(--blue); border:1px solid rgba(96,165,250,.35); }
 
   .repeat-block { position:relative; padding-left:14px; display:flex; flex-direction:column; gap:3px; }
-  .repeat-rail  { position:absolute; left:0; top:0; bottom:0; width:2px; background:linear-gradient(to bottom,var(--green),rgba(46,204,143,.1)); border-radius:2px; }
-  .repeat-tag   { font-family:var(--mono); font-size:10px; color:var(--green); letter-spacing:1px; margin-bottom:3px; display:flex; align-items:center; gap:7px; }
+  .repeat-rail { position:absolute; left:0; top:0; bottom:0; width:2px; background:linear-gradient(to bottom,var(--green),rgba(46,204,143,.1)); border-radius:2px; }
+  .repeat-tag { font-family:var(--mono); font-size:10px; color:var(--green); letter-spacing:1px; margin-bottom:3px; display:flex; align-items:center; gap:7px; }
   .repeat-tag::after { content:''; flex:1; height:1px; border-top:1px dashed rgba(46,204,143,.3); }
 
-  /* CALC */
   .calc-card { background:var(--s1); border:1px solid var(--border); border-radius:10px; padding:12px 16px; }
   .calc-title { font-family:var(--mono); font-size:10px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-bottom:8px; }
   .calc-formula { font-family:var(--mono); font-size:12px; line-height:2; color:#c8ddf5; }
   .cf-y{color:var(--yellow);font-weight:700;} .cf-p{color:var(--purple);font-weight:700;}
-  .cf-m{color:var(--muted);}                 .cf-b{color:var(--accent);font-weight:700;}
+  .cf-m{color:var(--muted);} .cf-b{color:var(--accent);font-weight:700;}
   .cf-g{color:var(--green);font-weight:700;} .cf-r{color:var(--blue);font-weight:700;}
   .cf-red{color:var(--red);font-weight:700;}
   .calc-result { margin-top:10px; padding:9px 14px; background:rgba(46,204,143,.08); border:1px solid rgba(46,204,143,.25); border-radius:7px; font-family:var(--mono); font-size:12px; color:var(--green); display:flex; align-items:center; gap:8px; }
@@ -119,11 +120,11 @@
 
   <div class="title-block">
     <div class="title-left">
-      <h1>라이다 바이너리 파일 포맷</h1>
+      <h1>라이다 바이너리 파일 포맷 샘플</h1>
       <p>Magic <span>"RECORDAE"</span> &nbsp;·&nbsp; Total <span>256 bytes</span> &nbsp;·&nbsp; Max Shapes <span>7</span></p>
     </div>
     <div class="title-badges">
-      <span class="tbadge tbadge-g">✓ V1.0</span>
+      <span class="tbadge tbadge-g">SAMPLE</span>
       <span class="tbadge tbadge-b">BINARY PROTOCOL</span>
     </div>
   </div>
@@ -139,23 +140,26 @@
     <div class="bar-card-title">256-byte 메모리 레이아웃</div>
     <div class="bar-track">
       <div class="bseg bseg-magic">8B</div>
-      <div class="bseg bseg-model"></div>
-      <div class="bseg bseg-rsv1">rsv 36B</div>
-      <div class="bseg bseg-scount"></div>
-      <div class="bseg bseg-shapes">Shape 블록 ×7 — 210 bytes</div>
+      <div class="bseg bseg-model">1B</div>
+      <div class="bseg bseg-frame">4B</div>
+      <div class="bseg bseg-echo">2B</div>
+      <div class="bseg bseg-rsv1">rsv 29B</div>
+      <div class="bseg bseg-sflag">2B</div>
+      <div class="bseg bseg-shapes">Shape 블록 ×7 - 210 bytes</div>
     </div>
     <div class="bar-legend">
       <div class="leg"><div class="leg-dot" style="background:rgba(245,200,66,.75)"></div>RECORDAE (8B)</div>
       <div class="leg"><div class="leg-dot" style="background:rgba(179,157,250,.65)"></div>모델 (1B)</div>
-      <div class="leg"><div class="leg-dot" style="background:rgba(42,69,112,.95)"></div>reserved (36B)</div>
-      <div class="leg"><div class="leg-dot" style="background:rgba(0,200,255,.65)"></div>ShapeCount (1B)</div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(96,165,250,.65)"></div>Frame (4B)</div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(255,107,107,.65)"></div>echoSource + echoProfile (2B)</div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(42,69,112,.95)"></div>reserved (29B)</div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(0,200,255,.65)"></div>ShapeFlag (2B)</div>
       <div class="leg"><div class="leg-dot" style="background:rgba(46,204,143,.55)"></div>Shape ×7 (210B)</div>
     </div>
   </div>
 
   <div class="section-label">필드 구조 상세</div>
   <div class="field-list">
-
     <div class="f-row f-head">
       <div class="fc fc-strip" style="background:var(--s2)"></div>
       <div class="fc">필드명</div>
@@ -179,29 +183,50 @@
       <div class="fc fc-note">라이다 장비 모델 <span class="hl-g">(열거형)</span></div>
     </div>
 
+    <div class="f-row f-frame">
+      <div class="fc fc-strip"></div><div class="fc fc-name">Frame</div>
+      <div class="fc"><span class="pill p-u8">u32</span></div>
+      <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">4</span></div>
+      <div class="fc fc-note">전체 프레임 수</div>
+    </div>
+
+    <div class="f-row f-echo">
+      <div class="fc fc-strip"></div><div class="fc fc-name">echoSource</div>
+      <div class="fc"><span class="pill p-u8">u8</span></div>
+      <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">1</span></div>
+      <div class="fc fc-note">payload 가 어떤 echo 슬롯에서 왔는지 기록 </div>
+    </div>
+
+    <div class="f-row f-echo">
+      <div class="fc fc-strip"></div><div class="fc fc-name">echoProfile</div>
+      <div class="fc"><span class="pill p-u8">u8</span></div>
+      <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">1</span></div>
+      <div class="fc fc-note">echo 슬롯의 의미를 기록</div>
+    </div>
+
     <div class="f-row f-rsv">
       <div class="fc fc-strip"></div><div class="fc fc-name">reserved</div>
       <div class="fc"><span class="pill p-u8">u8</span></div>
-      <div class="fc fc-cnt">36</div><div class="fc"><span class="fc-sz">36</span></div>
+      <div class="fc fc-cnt">29</div><div class="fc"><span class="fc-sz">29</span></div>
       <div class="fc fc-note" style="color:var(--muted)">향후 확장 예약 공간</div>
     </div>
 
-    <div class="f-row f-scount">
-      <div class="fc fc-strip"></div><div class="fc fc-name">ShapeCount</div>
-      <div class="fc"><span class="pill p-u8">u8</span></div>
-      <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">1</span></div>
-      <div class="fc fc-note">유효 Shape 수 &nbsp;<span class="hl-b">MaxCnt 7</span></div>
+    <div class="f-row f-sflag">
+      <div class="fc fc-strip"></div><div class="fc fc-name">ShapeFlag</div>
+      <div class="fc"><span class="pill p-u16">u16</span></div>
+      <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">2</span></div>
+      <div class="fc fc-note">출력할 Shape 선택 비트 <span class="hl-b">PCD | Depth | Ambient | Intensity</span></div>
     </div>
 
-    <div class="repeat-tag">↺ &nbsp;아래 블록 ShapeCount 수만큼 반복 (최대 7회 × 30B = 210B)</div>
+    <div class="repeat-tag">↺ 아래 블록은 Shape 슬롯 수만큼 반복 (최대 7회 × 30B = 210B)</div>
     <div class="repeat-block">
       <div class="repeat-rail"></div>
 
       <div class="f-row f-shape">
         <div class="fc fc-strip"></div><div class="fc fc-name">Shape</div>
-        <div class="fc"><span class="pill p-u8">u8</span></div>
-        <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">1</span></div>
-        <div class="fc fc-note">데이터 종류 <span class="hl-g">(열거형)</span> — 앰비언트 · 인텐시티 · PCD 등</div>
+        <div class="fc"><span class="pill p-u16">u16</span></div>
+        <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">2</span></div>
+        <div class="fc fc-note">데이터 종류 - 앰비언트 · 인텐시티 · PCD 등</div>
       </div>
 
       <div class="f-row f-geo">
@@ -222,20 +247,20 @@
         <div class="fc fc-strip"></div><div class="fc fc-name">자료형</div>
         <div class="fc"><span class="pill p-u8">u8</span></div>
         <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">1</span></div>
-        <div class="fc fc-note">픽셀 값 자료형 <span class="hl-g">(열거형)</span> — uint8~64 · float · double 등</div>
+        <div class="fc fc-note">픽셀 값 자료형 <span class="hl-g">(열거형)</span> - uint8~64 · float · double 등</div>
       </div>
 
       <div class="f-row f-comp">
         <div class="fc fc-strip"></div><div class="fc fc-name">압축플래그</div>
         <div class="fc"><span class="pill p-u8">u8</span></div>
         <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">1</span></div>
-        <div class="fc fc-note">압축 여부 및 방식 — 복원 시 참조</div>
+        <div class="fc fc-note">압축 여부 및 방식 - 복원 시 참조</div>
       </div>
 
       <div class="f-row f-rsv2">
         <div class="fc fc-strip"></div><div class="fc fc-name">reserved</div>
         <div class="fc"><span class="pill p-u8">u8</span></div>
-        <div class="fc fc-cnt">23</div><div class="fc"><span class="fc-sz">23</span></div>
+        <div class="fc fc-cnt">22</div><div class="fc"><span class="fc-sz">22</span></div>
         <div class="fc fc-note" style="color:var(--muted)">Shape 내 확장 예약 공간</div>
       </div>
     </div>
@@ -244,11 +269,11 @@
   <div class="calc-card">
     <div class="calc-title">Byte Size 검증</div>
     <div class="calc-formula">
-      <span class="cf-y">8</span>(RECORDAE) + <span class="cf-p">1</span>(모델) + <span class="cf-m">36</span>(reserved) + <span class="cf-b">1</span>(ShapeCount)
-      + <span class="cf-g">7</span> × [ <span class="cf-g">1</span>(Shape) + <span class="cf-r">2</span>(W) + <span class="cf-r">2</span>(H) + <span class="cf-p">1</span>(자료형) + <span class="cf-red">1</span>(압축) + <span class="cf-m">23</span>(rsv) ]
+      <span class="cf-y">8</span>(RECORDAE) + <span class="cf-p">1</span>(모델) + <span class="cf-r">4</span>(Frame) + <span class="cf-red">1</span>(echoSource) + <span class="cf-red">1</span>(echoProfile) + <span class="cf-m">29</span>(reserved) + <span class="cf-b">2</span>(ShapeFlag)
+      + <span class="cf-g">7</span> × [ <span class="cf-g">2</span>(Shape) + <span class="cf-r">2</span>(W) + <span class="cf-r">2</span>(H) + <span class="cf-p">1</span>(자료형) + <span class="cf-red">1</span>(압축) + <span class="cf-m">22</span>(rsv) ]
       = 46 + 7×30 = 46 + 210
     </div>
-    <div class="calc-result">✅ &nbsp;총 <strong>256 bytes</strong> — 정확히 일치</div>
+    <div class="calc-result">✅ 총 <strong>256 bytes</strong> - 정확히 일치</div>
   </div>
 
 </div>

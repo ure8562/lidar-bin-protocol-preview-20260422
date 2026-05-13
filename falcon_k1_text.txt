@@ -1,0 +1,111 @@
+--- page 1 ---
+www.seyond.com  
+ 
+Falcon K1 LiDAR 
+Falcon K1 is an industry -leading automotive -grade LiDAR 
+developed by Seyond through forward engineering. It can detect 
+objects as far as 500 meters, and dark objects with 10% reflectivity 
+up to 250 meters. Falcon can maximize point density in region of 
+interest (ROI) which is adjustable to focus where it matters most to 
+better tr ack objects on the road. High performance LiDAR with 
+strong environmental adaptability like Falcon is key to safe 
+autonomy and smart transportation. 
+ 
+Features 
+• 500m ultra-long detection range, image-grade ultra-high resolution 
+• Flexible and adjustable ROI 
+• 1550nm laser wavelength enables better eye-safety 
+• Greater environmental adaptability and longer product life 
+• Mass production of automotive-grade robust products is ready 
+Specifications 
+OPTICAL PERFORMANCE 
+Range (Maximum) 500 m 
+Range (Minimum) 1.5 m 
+Detection Range (10% 
+Lambertian reflectivity @ 10 Hz) 
+250 m@100 klx sunlight, POD>90% 
+Detection Range Accuracy  
+Note: “Accuracy is calculated 
+based on the discrepancy between 
+the average of 50 measurements 
+on static target at a specific 
+distance and the true distance” 
+±2cm 
+Detection Range Precision  Up to 2cm (1 standard deviation)  
+Detection Range Resolution 0.5 cm 
+Vertical Scanning Lines 1480 lines/sec 
+FOV in non-ROI (H×V) 120°×25° 
+FOV in ROI (H×V) 120°×9.6° 
+Angular Resolution in non-ROI 
+(H×V)* 
+0.2°×0.24° 
+Angular Resolution in ROI (H×V)* 0.1°×0.15° (1st 4.8°), 0.1°×0.1°(2nd 4.8°) 
+Angular Accuracy ± 0.1° 
+Frame Rate* 10 FPS  
+False Positive Rate <0.01% @ 100 klx sunlight 
+# of Returns Up to 2 returns 
+LASER 
+
+
+--- page 2 ---
+ 
+Laser Safety Class Class 1 (IEC 60825-1:2014) 
+Laser Wavelength 1550 nm 
+Beam Divergence (Full Angle) 0.1° 
+LIDAR OUTPUT 
+Data transmission 1000Base-T1 Ethernet (UDP,TCP/IP) 
+Points Per Second 1370000 Points/sec@1 return  
+2740000 Points/sec@2 return 
+Data Rate (Megabits Per Second) 11.69MB/S@1 return 
+17.45MB/S@2 return 
+Data Output radius, azimuth, reflectivity, timestamp, frame ID, return mode, 
+working mode, fault state, CRC verification, etc. 
+CONTROL INTERFACE 
+Interface TCP and HTTP APIs 
+Time Synchronization • IEEE1588 (PTP), accuracy: <1µs error 
+• IEEE 802.1as(gPTP) , accuracy: <1µs error 
+• NTP 
+MECHANICAL/ELECTRICAL 
+Power Consumption 30W 
+Operating Voltage 9 to 32V DC 
+Standard Voltage 12V DC 
+Connector Proprietary pluggable connector (Power + Automotive Ethernet + 
+CAN) 
+Dimensions (H×W×D) 58.9mm×228mm×149.6mm 
+Weight 1.7 kg 
+Mounting 4×M4×18 screws, located in bushings 
+OPERATIONAL 
+Operating Temperature -40 ° C to +85 ° C 
+Storage Temperature -40 ° C to +105 ° C 
+Ingress Protection IP67(body) 
+IP69K(window) 
+Shock IEC 60068-2-27 (Pulse shape: Half-sine. Peak acceleration: 500m/s² . 
+Duration of pulse: 6ms. Number of shocks per direction (±X, ±Y, ±Z): 
+10 shocks.) 
+Vibration IEC 60068-2-64 
+r.m.s. acceleration value: 30.8 m/s² , 3 axes 8 hr duration each 
+Compliance IEC60825-1 Class 1 eye-safe 
+RoHS (EU) 
+CE Mark(EN IEC 61000-3-2:2019+A1:2021, EN 61000-3) 
+ 
+ACCESSORIES 
+Optional Wire Harness 5m cable (power & Ethernet) 
+Optional Converter Metadapter 
+Optional Mount Metal bracket 
+SOFTWARE 
+Available Drivers ROS/ROS2 
+
+
+--- page 3 ---
+ 
+REV: 24/06/11  ©  2024 Seyond, Inc.  All rights reserved 
+ 
+Dimensions (Unit: mm) 
+ 
+ 
+ 
+ 
+*Specifications are subject to change without notice and based on engineering targets.  Specs are not guaranteed to have passed full 
+validation at the time of publication. 
+
+

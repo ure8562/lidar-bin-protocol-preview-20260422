@@ -1,0 +1,228 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Falcon K V3 가변 프레임 구조</title>
+<style>
+  :root {
+    --bg:#07111b; --panel:#0f1b2a; --panel2:#14253a; --line:#2d4b70;
+    --text:#edf7ff; --muted:#91abc3; --cyan:#22d3ee; --green:#4ade80;
+    --yellow:#facc15; --red:#fb7185; --violet:#a78bfa; --orange:#fb923c;
+    --mono:Consolas,"JetBrains Mono",monospace; --sans:"Segoe UI","Noto Sans KR",sans-serif;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:22px; background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.5; }
+  .wrap { max-width:1040px; margin:0 auto; }
+  h1 { margin:0 0 6px; font-size:25px; letter-spacing:-.02em; }
+  .sub { color:var(--muted); font-family:var(--mono); font-size:13px; margin-bottom:16px; }
+  .hero {
+    border:1px solid rgba(34,211,238,.38); background:linear-gradient(135deg,rgba(34,211,238,.12),rgba(74,222,128,.06));
+    border-radius:10px; padding:16px; margin-bottom:16px;
+  }
+  .hero strong { color:var(--yellow); }
+  .hero .big { font-size:18px; font-weight:800; margin-bottom:6px; }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .chip { border:1px solid var(--line); border-radius:999px; padding:5px 10px; color:var(--muted); font-family:var(--mono); font-size:12px; background:rgba(15,27,42,.9); }
+  .chip b { color:var(--cyan); }
+  .section { margin-top:18px; }
+  .section-title {
+    font-family:var(--mono); font-size:12px; letter-spacing:.12em; color:var(--muted);
+    text-transform:uppercase; display:flex; align-items:center; gap:10px; margin-bottom:8px;
+  }
+  .section-title::after { content:""; flex:1; border-top:1px solid var(--line); }
+  .flow { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px; }
+  .box { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px; min-height:92px; }
+  .box h2 { margin:0 0 6px; font-size:15px; }
+  .box p { margin:0; color:var(--muted); font-size:13px; }
+  .arrow { color:var(--cyan); font-family:var(--mono); font-weight:700; }
+  .layout-bar { display:flex; height:42px; border:1px solid var(--line); border-radius:8px; overflow:hidden; margin:8px 0 12px; }
+  .seg { display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:12px; font-weight:700; }
+  .seg-h { width:19%; background:rgba(34,211,238,.25); color:#c9fbff; }
+  .seg-i { width:30%; background:rgba(250,204,21,.23); color:#fff2a8; }
+  .seg-p { flex:1; background:rgba(74,222,128,.20); color:#c9ffd9; }
+  table { width:100%; border-collapse:collapse; overflow:hidden; border-radius:8px; background:var(--panel); border:1px solid var(--line); }
+  th, td { border-bottom:1px solid var(--line); padding:8px 10px; font-size:13px; text-align:left; vertical-align:top; }
+  th { background:var(--panel2); color:var(--muted); font-family:var(--mono); font-size:11px; text-transform:uppercase; }
+  tr:last-child td { border-bottom:none; }
+  .mono, code { font-family:var(--mono); color:#d5f3ff; }
+  .yellow { color:var(--yellow); font-weight:800; }
+  .cyan { color:var(--cyan); font-weight:800; }
+  .green { color:var(--green); font-weight:800; }
+  .red { color:var(--red); font-weight:800; }
+  .violet { color:var(--violet); font-weight:800; }
+  .note { background:rgba(250,204,21,.08); border:1px solid rgba(250,204,21,.28); border-radius:8px; padding:11px 13px; color:#fff6c7; margin-top:10px; font-size:13px; }
+  .code { background:#050d15; border:1px solid var(--line); border-radius:8px; padding:12px 14px; font-family:var(--mono); font-size:13px; overflow:auto; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .field { color:var(--yellow); font-family:var(--mono); font-weight:800; }
+  @media (max-width:820px) {
+    body { padding:14px; }
+    .flow, .two { grid-template-columns:1fr; }
+    .layout-bar { height:auto; flex-direction:column; }
+    .seg { width:100%; min-height:34px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Falcon K V3 가변 프레임 구조</h1>
+  <div class="sub">기존 256B Header는 유지하고, Falcon K일 때만 Header 뒤에 72000개 고정 IndexTable을 붙이는 방식</div>
+
+  <div class="hero">
+    <div class="big">핵심: Falcon K는 <strong>W/H로 frame 크기를 읽지 않는다.</strong></div>
+    <div>
+      Falcon K 원본은 고정 이미지가 아니라 <span class="cyan">idx별 packet/block stream</span>이다.
+      그래서 frame마다 point 수가 달라질 수 있고, frame의 시작 위치와 크기는 <span class="yellow">IndexTable</span>로 찾는다.
+    </div>
+    <div class="chips">
+      <div class="chip">Model <b>5</b> SEYOND_FALCON_K</div>
+      <div class="chip">IndexTable <b>72000 * 16B</b></div>
+      <div class="chip">offset 기준 <b>Payload 시작점</b></div>
+      <div class="chip">W/H <b>frame size 계산에 미사용</b></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Falcon 원본 구조</div>
+    <div class="flow">
+      <div class="box">
+        <h2>Frame</h2>
+        <p><span class="mono">idx</span>가 같은 packet 묶음이 frame 하나다.</p>
+      </div>
+      <div class="box">
+        <h2>Packet</h2>
+        <p>각 packet은 <span class="mono">size</span>, <span class="mono">idx</span>, <span class="mono">item_number</span>를 가진다.</p>
+      </div>
+      <div class="box">
+        <h2>Block</h2>
+        <p><span class="mono">item_number</span>는 packet 안 block 개수다.</p>
+      </div>
+      <div class="box">
+        <h2>Point x 8</h2>
+        <p>샘플 block은 49B라 point가 <span class="yellow">8개</span> 들어간다.</p>
+      </div>
+    </div>
+    <div class="note">
+      frame point 수 = 같은 <span class="mono">idx</span>의 <span class="mono">item_number</span> 합계 * 8
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Falcon 파일 레이아웃</div>
+    <div class="layout-bar">
+      <div class="seg seg-h">Header 256B</div>
+      <div class="seg seg-i">IndexTable 72000 * 16B</div>
+      <div class="seg seg-p">Payload 가변 frame payload</div>
+    </div>
+    <table>
+      <thead>
+        <tr><th>영역</th><th>크기</th><th>설명</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="field">Header</td><td class="mono">256</td><td>기존 <span class="mono">LbcHeaderLayout</span>. model, frameCount, shapeFlags를 기록한다.</td></tr>
+        <tr><td class="field">IndexTable</td><td class="mono">72000 * 16</td><td>Falcon K에서만 존재한다. 20Hz 1시간 기준으로 고정 확보하며, 사용하지 않는 entry는 0으로 채운다.</td></tr>
+        <tr><td class="field">Payload</td><td class="mono">variable</td><td>frame별 point 수가 달라지므로 payload frame 크기도 달라진다.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">기존 Header 필드와 Falcon 해석</div>
+    <table>
+      <thead>
+        <tr><th>필드</th><th>Type</th><th>Size</th><th>Falcon K에서의 의미</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="field">Header</td><td class="mono">u8[8]</td><td class="mono">8</td><td>매직 시그니처 <span class="yellow">"RECORDAE"</span></td></tr>
+        <tr><td class="field">Model</td><td class="mono">u8</td><td class="mono">1</td><td><span class="green">5 = SEYOND_FALCON_K</span></td></tr>
+        <tr><td class="field">Frame</td><td class="mono">u32</td><td class="mono">4</td><td>실제 frame 수. IndexTable은 항상 72000개 고정이다.</td></tr>
+        <tr><td class="field">echoSource</td><td class="mono">u8</td><td class="mono">1</td><td>Falcon dual return 보존 시 <span class="mono">MERGED</span>로 기록 가능</td></tr>
+        <tr><td class="field">echoProfile</td><td class="mono">u8</td><td class="mono">1</td><td>dual return 구조이면 <span class="mono">DUAL</span>로 기록 가능</td></tr>
+        <tr><td class="field">reserved</td><td class="mono">u8[29]</td><td class="mono">29</td><td>향후 Falcon index flag/version을 넣을 수 있는 예약 공간</td></tr>
+        <tr><td class="field">ShapeFlag</td><td class="mono">u16</td><td class="mono">2</td><td>Payload에 들어가는 Shape 조합. PCD | Depth | Ambient | Intensity</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Shape 슬롯에서 W/H 처리</div>
+    <table>
+      <thead>
+        <tr><th>Shape 필드</th><th>Type</th><th>Size</th><th>Falcon K IndexTable 방식</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="field">Shape</td><td class="mono">u16</td><td class="mono">2</td><td>데이터 종류. PCD, Depth, Ambient, Intensity 등</td></tr>
+        <tr><td class="field">W</td><td class="mono">u16</td><td class="mono">2</td><td><span class="red">frame 크기 계산에 사용하지 않음</span></td></tr>
+        <tr><td class="field">H</td><td class="mono">u16</td><td class="mono">2</td><td><span class="red">frame 크기 계산에 사용하지 않음</span></td></tr>
+        <tr><td class="field">자료형</td><td class="mono">u8</td><td class="mono">1</td><td>각 Shape 원소 타입. float, u32, u16 등</td></tr>
+        <tr><td class="field">압축플래그</td><td class="mono">u8</td><td class="mono">1</td><td>압축 여부. 현재는 NONE</td></tr>
+        <tr><td class="field">reserved</td><td class="mono">u8[22]</td><td class="mono">22</td><td>Shape 내부 확장 예약 공간</td></tr>
+      </tbody>
+    </table>
+    <div class="note">
+      기존 고정 frame 모델은 <span class="mono">W * H</span>로 frame payload 크기를 계산할 수 있다.
+      하지만 Falcon K IndexTable 방식에서는 <span class="mono">index[n].size</span>가 해당 frame의 실제 크기다.
+      W/H는 reader가 frame seek와 크기 계산에 쓰지 않는다.
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Index Entry</div>
+    <div class="two">
+      <div>
+        <table>
+          <thead>
+            <tr><th>필드</th><th>Type</th><th>Size</th><th>의미</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="field">offset</td><td class="mono">uint64_t</td><td class="mono">8</td><td>Payload 시작 기준 frame payload 시작 위치</td></tr>
+            <tr><td class="field">size</td><td class="mono">uint32_t</td><td class="mono">4</td><td>해당 frame payload byte 크기</td></tr>
+            <tr><td class="field">reserved</td><td class="mono">uint32_t</td><td class="mono">4</td><td>현재 0. 향후 확장용</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="code">
+struct LbcFrameIndexEntry<br>
+{<br>
+&nbsp;&nbsp;uint64_t offset;<br>
+&nbsp;&nbsp;uint32_t size;<br>
+&nbsp;&nbsp;uint32_t reserved;<br>
+};<br><br>
+sizeof(LbcFrameIndexEntry) == 16
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">읽기 계산식</div>
+    <div class="code">
+indexTableOffset = 256<br>
+payloadOffset = 256 + 72000 * 16 = 1152256<br>
+frameFileOffset = payloadOffset + index[n].offset<br>
+frameSize = index[n].size
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Payload Frame 구조</div>
+    <table>
+      <thead>
+        <tr><th>순서</th><th>내용</th><th>크기</th><th>설명</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">1</td><td>frameIndex</td><td class="mono">4</td><td>기존 payload prefix 유지</td></tr>
+        <tr><td class="mono">2</td><td>timestamp</td><td class="mono">8</td><td>기존 payload prefix 유지</td></tr>
+        <tr><td class="mono">3</td><td>PCD.X / PCD.Y / PCD.Z</td><td class="mono">pointCount * 12</td><td>float 배열 3개</td></tr>
+        <tr><td class="mono">4</td><td>Depth</td><td class="mono">pointCount * 4</td><td><span class="mono">radius * 5mm</span></td></tr>
+        <tr><td class="mono">5</td><td>Ambient</td><td class="mono">pointCount * 4</td><td>Falcon의 elongation 보존</td></tr>
+        <tr><td class="mono">6</td><td>Intensity</td><td class="mono">pointCount * 2</td><td>Falcon의 refl 보존</td></tr>
+      </tbody>
+    </table>
+    <div class="note">
+      ShapeFlag가 기본 전체 출력이면 bytesPerPoint = 12 + 4 + 4 + 2 = 22,
+      따라서 pointCount = (index[n].size - 12) / 22 로 역산할 수 있다.
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -61,6 +61,32 @@
     gap:12px;
   }
 
+  .doc-section {
+    margin-top:24px;
+  }
+
+  .doc-section:first-of-type {
+    margin-top:0;
+  }
+
+  .section-title {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin:0 0 10px;
+    color:var(--muted);
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+  }
+
+  .section-title::after {
+    content:"";
+    flex:1;
+    border-top:1px solid var(--line);
+  }
+
   .doc-card {
     display:block;
     min-height:154px;
@@ -122,6 +148,117 @@
     color:#c8ffd9;
   }
 
+  .badge.gps {
+    border-color:rgba(250,204,21,.45);
+    color:#fff2ba;
+  }
+
+  .badge.meeting {
+    border-color:rgba(251,113,133,.45);
+    color:#ffd5dc;
+  }
+
+  .meeting-list {
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+
+  .meeting-row {
+    display:grid;
+    grid-template-columns:96px minmax(0,1fr) auto;
+    gap:12px;
+    align-items:center;
+    min-height:68px;
+    padding:12px 14px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:var(--panel);
+    color:inherit;
+    text-decoration:none;
+    transition:transform .15s ease, border-color .15s ease, background .15s ease;
+  }
+
+  .meeting-row:hover,
+  .meeting-row:focus-visible {
+    transform:translateY(-1px);
+    border-color:var(--accent);
+    background:var(--panel-2);
+    outline:none;
+  }
+
+  .meeting-date {
+    color:#ffd5dc;
+    font-family:var(--mono);
+    font-size:13px;
+    font-weight:700;
+  }
+
+  .meeting-title {
+    min-width:0;
+  }
+
+  .meeting-title strong {
+    display:block;
+    margin-bottom:3px;
+    font-size:15px;
+  }
+
+  .meeting-title span {
+    display:block;
+    color:var(--muted);
+    font-size:13px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .meeting-action {
+    color:#cce3f8;
+    font-family:var(--mono);
+    font-size:12px;
+  }
+
+  .pagination {
+    display:flex;
+    justify-content:center;
+    gap:7px;
+    margin-top:14px;
+  }
+
+  .page-btn {
+    min-width:34px;
+    height:32px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:var(--panel);
+    color:#cce3f8;
+    font-family:var(--mono);
+    cursor:pointer;
+  }
+
+  .page-btn:hover,
+  .page-btn:focus-visible {
+    border-color:var(--accent);
+    outline:none;
+  }
+
+  .page-btn.active {
+    border-color:rgba(251,113,133,.55);
+    background:rgba(251,113,133,.12);
+    color:#ffd5dc;
+  }
+
+  .empty-page {
+    display:none;
+    padding:14px 16px;
+    border:1px dashed var(--line);
+    border-radius:8px;
+    color:var(--muted);
+    font-size:13px;
+    text-align:center;
+  }
+
   .note {
     margin-top:18px;
     padding:14px 16px;
@@ -150,6 +287,15 @@
     .doc-list {
       grid-template-columns:1fr;
     }
+
+    .meeting-row {
+      grid-template-columns:1fr;
+      gap:5px;
+    }
+
+    .meeting-action {
+      display:none;
+    }
   }
 </style>
 </head>
@@ -157,32 +303,119 @@
 <main>
   <header>
     <h1>LiDAR HTML 문서 모음</h1>
-    <p class="summary">프로토콜 명세와 Falcon K 관련 HTML 문서를 한 곳에서 여는 시작 페이지입니다.</p>
+    <p class="summary">프로토콜 명세, 모델별 보조 문서, 회의 정리 HTML을 한 곳에서 여는 시작 페이지입니다.</p>
   </header>
 
-  <section class="doc-list" aria-label="HTML 문서 링크">
-    <a class="doc-card" href="protocol.html">
-      <h2>라이다 바이너리 프로토콜</h2>
-      <p>Header, field 배치, 데이터 타입 등 LiDAR 바이너리 파일 구조를 정리한 문서입니다.</p>
-      <div class="meta">
-        <span class="badge main">protocol.html</span>
-        <span class="badge">명세</span>
-      </div>
-    </a>
+  <section class="doc-section" aria-labelledby="protocol-section">
+    <h2 class="section-title" id="protocol-section">Protocol</h2>
+    <div class="doc-list">
+      <a class="doc-card" href="protocol.html">
+        <h2>라이다 바이너리 프로토콜</h2>
+        <p>Header, field 배치, 데이터 타입 등 LiDAR 바이너리 파일 구조를 정리한 문서입니다.</p>
+        <div class="meta">
+          <span class="badge main">protocol.html</span>
+          <span class="badge">명세</span>
+        </div>
+      </a>
 
-    <a class="doc-card" href="falcon_k_index.html">
-      <h2>Falcon K V3 가변 프레임 구조</h2>
-      <p>Falcon K 모델에서 IndexTable을 이용해 frame offset과 size를 읽는 방식을 정리한 문서입니다.</p>
-      <div class="meta">
-        <span class="badge falcon">falcon_k_index.html</span>
-        <span class="badge">Falcon K</span>
-      </div>
-    </a>
+      <a class="doc-card" href="gps_protocol.html">
+        <h2>GPS Protocol</h2>
+        <p>GPSAE header, packet field, 위도/경도 각도 변환 공식을 정리한 문서입니다.</p>
+        <div class="meta">
+          <span class="badge gps">gps_protocol.html</span>
+          <span class="badge">GPS</span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section class="doc-section" aria-labelledby="model-section">
+    <h2 class="section-title" id="model-section">Model Notes</h2>
+    <div class="doc-list">
+      <a class="doc-card" href="falcon_k_index.html">
+        <h2>Falcon K V3 가변 프레임 구조</h2>
+        <p>Falcon K 모델에서 IndexTable을 이용해 frame offset과 size를 읽는 방식을 정리한 문서입니다.</p>
+        <div class="meta">
+          <span class="badge falcon">falcon_k_index.html</span>
+          <span class="badge">Falcon K</span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section class="doc-section" aria-labelledby="meeting-section">
+    <h2 class="section-title" id="meeting-section">Meeting</h2>
+    <div class="meeting-list" id="meeting-list" aria-label="회의 정리 문서 목록">
+      <a class="meeting-row" href="260427%20%EB%9D%BC%EC%9D%B4%EB%8B%A4_%EB%AF%B8%ED%8C%85_%EC%A0%95%EB%A6%AC.html" data-meeting-item>
+        <div class="meeting-date">260427</div>
+        <div class="meeting-title">
+          <strong>라이다 미팅 정리</strong>
+          <span>2026년 4월 27일 라이다 미팅 내용을 정리한 HTML 문서</span>
+        </div>
+        <div class="meeting-action">OPEN</div>
+      </a>
+    </div>
+    <div class="empty-page" id="meeting-empty">해당 페이지에 표시할 회의 문서가 없습니다.</div>
+    <nav class="pagination" id="meeting-pagination" aria-label="회의 정리 페이지"></nav>
   </section>
 
   <div class="note">
     새 HTML 파일을 추가할 때는 이 파일의 <code>doc-list</code> 영역에 같은 형태의 링크 카드를 하나 더 넣으면 됩니다.
   </div>
 </main>
+<script>
+  (function () {
+    var pageSize = 10;
+    var items = Array.prototype.slice.call(document.querySelectorAll('[data-meeting-item]'));
+    var pagination = document.getElementById('meeting-pagination');
+    var empty = document.getElementById('meeting-empty');
+
+    if (!pagination || items.length === 0) {
+      return;
+    }
+
+    var pageCount = Math.max(1, Math.ceil(items.length / pageSize));
+    var currentPage = 1;
+
+    function render(page) {
+      currentPage = page;
+      var visibleCount = 0;
+
+      items.forEach(function (item, index) {
+        var itemPage = Math.floor(index / pageSize) + 1;
+        var isVisible = itemPage === currentPage;
+        item.style.display = isVisible ? 'grid' : 'none';
+        if (isVisible) {
+          visibleCount += 1;
+        }
+      });
+
+      if (empty) {
+        empty.style.display = visibleCount === 0 ? 'block' : 'none';
+      }
+
+      Array.prototype.forEach.call(pagination.querySelectorAll('button'), function (button) {
+        var isActive = Number(button.getAttribute('data-page')) === currentPage;
+        button.classList.toggle('active', isActive);
+        button.setAttribute('aria-current', isActive ? 'page' : 'false');
+      });
+    }
+
+    for (var page = 1; page <= pageCount; page += 1) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'page-btn';
+      button.textContent = String(page);
+      button.setAttribute('data-page', String(page));
+      button.addEventListener('click', function () {
+        render(Number(this.getAttribute('data-page')));
+      });
+      pagination.appendChild(button);
+    }
+
+    pagination.style.display = pageCount > 1 ? 'flex' : 'none';
+    render(1);
+  })();
+</script>
 </body>
 </html>

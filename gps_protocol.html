@@ -1,0 +1,222 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPS Protocol</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0b0f1c; --s1:#141e30; --s2:#1a2840; --border:#2a4570;
+    --accent:#00c8ff; --green:#2ecc8f; --yellow:#f5c842;
+    --red:#ff6b6b; --purple:#b39dfa; --blue:#60a5fa;
+    --text:#eef6ff; --muted:#8aafd4;
+    --mono:'JetBrains Mono',Consolas,monospace; --sans:'Noto Sans KR','Segoe UI',sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:var(--bg); color:var(--text); font-family:var(--sans);
+    padding:20px 20px 28px;
+    background-image:
+      radial-gradient(ellipse 70% 40% at 10% 0%,rgba(0,200,255,.07) 0%,transparent 55%),
+      radial-gradient(ellipse 50% 30% at 90% 100%,rgba(46,204,143,.05) 0%,transparent 50%);
+  }
+  .wrap { max-width:860px; margin:0 auto; }
+
+  .title-block { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; gap:10px; flex-wrap:wrap; }
+  .title-left h1 {
+    font-size:18px; font-weight:900; letter-spacing:-.3px; margin-bottom:3px;
+    background:linear-gradient(110deg,#fff 0%,var(--accent) 55%,var(--green) 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .title-left p { font-family:var(--mono); font-size:10px; color:var(--muted); }
+  .title-left p span { color:var(--yellow); }
+  .title-badges { display:flex; gap:6px; flex-wrap:wrap; }
+  .tbadge { font-family:var(--mono); font-size:10px; letter-spacing:1px; padding:3px 10px; border-radius:20px; font-weight:700; text-decoration:none; }
+  .tbadge-g { background:rgba(46,204,143,.15); border:1px solid rgba(46,204,143,.4); color:var(--green); }
+  .tbadge-b { background:rgba(0,200,255,.12); border:1px solid rgba(0,200,255,.35); color:var(--accent); }
+
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-bottom:12px; }
+  .stat { background:var(--s1); border:1px solid var(--border); border-radius:8px; padding:8px 10px; text-align:center; }
+  .stat-val { font-family:var(--mono); font-size:20px; font-weight:900; line-height:1.1; }
+  .stat-lbl { font-size:10px; color:var(--muted); margin-top:2px; }
+
+  .section-label { font-family:var(--mono); font-size:10px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; gap:8px; margin-top:14px; }
+  .section-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  .info-card { background:var(--s1); border:1px solid var(--border); border-radius:10px; padding:12px 16px; margin-bottom:12px; }
+  .info-title { font-family:var(--mono); font-size:10px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-bottom:9px; display:flex; align-items:center; gap:8px; }
+  .info-title span { color:var(--yellow); letter-spacing:0; text-transform:none; }
+  .info-list { display:flex; flex-direction:column; gap:3px; }
+  .info-row { display:grid; grid-template-columns:3px 154px 74px 52px 82px 1fr; border-radius:7px; overflow:hidden; border:1px solid var(--border); }
+  .info-row:hover { border-color:rgba(0,200,255,.45); }
+  .ic { padding:7px 10px; display:flex; align-items:center; border-right:1px solid var(--border); font-size:12px; background:rgba(20,30,48,.75); }
+  .ic:last-child { border-right:none; }
+  .ic-strip { padding:0; }
+  .ic-name { font-family:var(--mono); font-weight:700; color:#dceeff; }
+  .ic-note { color:#c8ddf5; line-height:1.4; }
+  .info-head .ic { background:var(--s2); font-family:var(--mono); font-size:9px; letter-spacing:1px; color:var(--muted); text-transform:uppercase; padding:6px 10px; }
+
+  .strip-y { background:var(--yellow); }
+  .strip-g { background:var(--green); }
+  .strip-b { background:var(--blue); }
+  .strip-c { background:var(--accent); }
+  .strip-p { background:var(--purple); }
+  .strip-r { background:var(--red); }
+  .strip-m { background:var(--border); }
+
+  .pill { font-family:var(--mono); font-size:10px; font-weight:700; padding:2px 7px; border-radius:5px; white-space:nowrap; }
+  .p-u8 { background:rgba(0,200,255,.15); color:var(--accent); border:1px solid rgba(0,200,255,.3); }
+  .p-i32 { background:rgba(179,157,250,.16); color:var(--purple); border:1px solid rgba(179,157,250,.32); }
+  .p-dbl { background:rgba(46,204,143,.14); color:var(--green); border:1px solid rgba(46,204,143,.32); }
+
+  .bar-card { background:var(--s1); border:1px solid var(--border); border-radius:10px; padding:12px 16px; margin-bottom:12px; }
+  .bar-card-title { font-family:var(--mono); font-size:10px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-bottom:8px; }
+  .bar-track { height:28px; background:var(--s2); border-radius:6px; overflow:hidden; display:flex; margin-bottom:10px; }
+  .bseg { height:100%; display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:9px; font-weight:700; white-space:nowrap; overflow:hidden; }
+  .bseg-magic { width:18%; background:rgba(245,200,66,.55); color:#1a1400; }
+  .bseg-size { width:14%; background:rgba(179,157,250,.55); color:#1a1400; }
+  .bseg-packet { flex:1; background:rgba(46,204,143,.32); color:#d8ffe5; }
+  .bseg-rsv { width:18%; background:rgba(42,69,112,.85); color:var(--muted); }
+  .bar-legend { display:flex; flex-wrap:wrap; gap:8px; }
+  .leg { display:flex; align-items:center; gap:5px; font-size:10px; color:#b8d4f0; }
+  .leg-dot { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
+
+  .formula-card { background:var(--s1); border:1px solid var(--border); border-radius:10px; padding:12px 16px; margin-bottom:12px; }
+  .formula-title { font-family:var(--mono); font-size:10px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-bottom:8px; }
+  .steps { display:flex; flex-direction:column; gap:7px; }
+  .step { display:grid; grid-template-columns:30px 1fr; gap:9px; align-items:start; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:rgba(20,30,48,.7); }
+  .step-no { display:flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; background:rgba(0,200,255,.16); border:1px solid rgba(0,200,255,.35); color:var(--accent); font-family:var(--mono); font-size:11px; font-weight:700; }
+  .step-main { color:#dceeff; font-size:13px; line-height:1.5; }
+  .step-main code { display:inline-block; margin-top:4px; padding:2px 6px; border-radius:5px; background:rgba(255,255,255,.06); color:#ffd9d9; font-family:var(--mono); font-size:11px; }
+  .note { background:rgba(245,200,66,.08); border:1px solid rgba(245,200,66,.25); border-radius:10px; color:#fff2bd; padding:10px 13px; font-size:12px; line-height:1.5; margin-bottom:12px; }
+  code { font-family:var(--mono); color:#d5f4ff; }
+
+  @media (max-width:760px) {
+    body { padding:14px; }
+    .stats { grid-template-columns:1fr 1fr; }
+    .info-row { grid-template-columns:3px 126px 66px 44px 72px minmax(170px,1fr); min-width:720px; }
+    .info-list { overflow-x:auto; }
+    .bar-track { min-width:620px; }
+    .bar-card { overflow-x:auto; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="title-block">
+    <div class="title-left">
+      <h1>GPS Protocol</h1>
+      <p>Magic <span>"GPSAE"</span> &nbsp;·&nbsp; Total <span>256 bytes</span> &nbsp;·&nbsp; Byte Order <span>Big Endian</span></p>
+    </div>
+    <div class="title-badges">
+      <a class="tbadge tbadge-g" href="index.html">INDEX</a>
+      <span class="tbadge tbadge-b">GPS PROTOCOL</span>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-val" style="color:var(--yellow)">GPSAE</div><div class="stat-lbl">Magic Header</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--accent)">256</div><div class="stat-lbl">Total Bytes</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--green)">DBL</div><div class="stat-lbl">GPS Values</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--purple)">BE</div><div class="stat-lbl">Big Endian</div></div>
+  </div>
+
+  <div class="bar-card">
+    <div class="bar-card-title">Packet 흐름</div>
+    <div class="bar-track">
+      <div class="bseg bseg-magic">Header GPSAE</div>
+      <div class="bseg bseg-size">Total Size</div>
+      <div class="bseg bseg-packet">IDX / 위도 / 경도 / 속도 / 방향 / 상태</div>
+      <div class="bseg bseg-rsv">256B Frame</div>
+    </div>
+    <div class="bar-legend">
+      <div class="leg"><div class="leg-dot" style="background:rgba(245,200,66,.75)"></div>Magic: GPSAE</div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(179,157,250,.65)"></div>Total Size: Frame Size</div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(46,204,143,.55)"></div>GPS packet fields</div>
+    </div>
+  </div>
+
+  <div class="section-label">Header</div>
+  <div class="info-card">
+    <div class="info-title">GPS Header <span>빅 엔디안</span></div>
+    <div class="info-list">
+      <div class="info-row info-head">
+        <div class="ic ic-strip"></div><div class="ic">Title</div><div class="ic">Type</div><div class="ic">Cnt</div><div class="ic">Size</div><div class="ic">비고</div>
+      </div>
+      <div class="info-row">
+        <div class="ic ic-strip strip-y"></div><div class="ic ic-name">Header = GPSAE</div><div class="ic"><span class="pill p-u8">u8</span></div><div class="ic">5</div><div class="ic">5</div><div class="ic ic-note">Magic</div>
+      </div>
+      <div class="info-row">
+        <div class="ic ic-strip strip-p"></div><div class="ic ic-name">Total Size</div><div class="ic"><span class="pill p-i32">I32</span></div><div class="ic">1</div><div class="ic">4</div><div class="ic ic-note">Frame Size</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Packet</div>
+  <div class="info-card">
+    <div class="info-title">GPS Packet Fields <span>Total 256 bytes frame</span></div>
+    <div class="info-list">
+      <div class="info-row info-head">
+        <div class="ic ic-strip"></div><div class="ic">Packet</div><div class="ic">Type</div><div class="ic">Cnt</div><div class="ic">Size</div><div class="ic">비고</div>
+      </div>
+      <div class="info-row">
+        <div class="ic ic-strip strip-b"></div><div class="ic ic-name">IDX</div><div class="ic"><span class="pill p-i32">I32</span></div><div class="ic">5</div><div class="ic">5</div><div class="ic ic-note">Frame index</div>
+      </div>
+      <div class="info-row">
+        <div class="ic ic-strip strip-p"></div><div class="ic ic-name">Total Size</div><div class="ic"><span class="pill p-i32">I32</span></div><div class="ic">1</div><div class="ic">4</div><div class="ic ic-note">Frame Size</div>
+      </div>
+      <div class="info-row">
+        <div class="ic ic-strip strip-g"></div><div class="ic ic-name">위도</div><div class="ic"><span class="pill p-dbl">DBL</span></div><div class="ic">1</div><div class="ic">8</div><div class="ic ic-note">각도로 변환 필요</div>
+      </div>
+      <div class="info-row">
+        <div class="ic ic-strip strip-c"></div><div class="ic ic-name">경도</div><div class="ic"><span class="pill p-dbl">DBL</span></div><div class="ic">1</div><div class="ic">8</div><div class="ic ic-note">각도로 변환 필요</div>
+      </div>
+      <div class="info-row">
+        <div class="ic ic-strip strip-y"></div><div class="ic ic-name">속도</div><div class="ic"><span class="pill p-dbl">DBL</span></div><div class="ic">1</div><div class="ic">8</div><div class="ic ic-note">knots</div>
+      </div>
+      <div class="info-row">
+        <div class="ic ic-strip strip-r"></div><div class="ic ic-name">방향</div><div class="ic"><span class="pill p-dbl">DBL</span></div><div class="ic">1</div><div class="ic">8</div><div class="ic ic-note">Degree</div>
+      </div>
+      <div class="info-row">
+        <div class="ic ic-strip strip-m"></div><div class="ic ic-name">상태</div><div class="ic"><span class="pill p-dbl">DBL</span></div><div class="ic">1</div><div class="ic">8</div><div class="ic ic-note">1=유효, 0=무효</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">GPS 각도 변환 공식</div>
+  <div class="formula-card">
+    <div class="formula-title">LabVIEW 구현 순서</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-no">1</div>
+        <div class="step-main">100으로 나누기<br><code>3728.9789 / 100 = 37.289789</code></div>
+      </div>
+      <div class="step">
+        <div class="step-no">2</div>
+        <div class="step-main">Floor 함수로 정수 부분만 추출해서 도(dd)로 사용<br><code>Floor(37.289789) = 37</code></div>
+      </div>
+      <div class="step">
+        <div class="step-no">3</div>
+        <div class="step-main">원래값에서 도×100 빼기. 남은 값은 분(mm.mmmm)<br><code>3728.9789 - (37 * 100) = 28.9789</code></div>
+      </div>
+      <div class="step">
+        <div class="step-no">4</div>
+        <div class="step-main">분을 60으로 나누기<br><code>28.9789 / 60 = 0.48298</code></div>
+      </div>
+      <div class="step">
+        <div class="step-no">5</div>
+        <div class="step-main">도 + 분/60<br><code>37 + 0.48298 = 37.48298°</code></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    위도/경도 원본값이 NMEA 스타일의 <code>ddmm.mmmm</code> 또는 <code>dddmm.mmmm</code> 형태로 들어오므로,
+    도(degree) 부분과 분(minute) 부분을 분리한 뒤 <code>degree + minute / 60</code>으로 십진 각도로 변환한다.
+  </div>
+
+</div>
+</body>
+</html>

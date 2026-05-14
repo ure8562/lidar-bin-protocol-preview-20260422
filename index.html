@@ -69,22 +69,71 @@
     margin-top:0;
   }
 
+  .doc-section[open] > .section-title .section-chev {
+    transform:rotate(90deg);
+  }
+
+  .doc-section > .doc-list,
+  .doc-section > .meeting-list,
+  .doc-section > .empty-page,
+  .doc-section > .pagination {
+    margin-top:10px;
+  }
+
   .section-title {
     display:flex;
     align-items:center;
     gap:10px;
-    margin:0 0 10px;
+    margin:0;
+    padding:6px 4px;
+    border-radius:6px;
     color:var(--muted);
     font-family:var(--mono);
     font-size:12px;
     letter-spacing:.08em;
     text-transform:uppercase;
+    cursor:pointer;
+    list-style:none;
+    user-select:none;
+    transition:background .15s ease, color .15s ease;
+  }
+
+  .section-title::-webkit-details-marker { display:none; }
+
+  .section-title:hover,
+  .section-title:focus-visible {
+    color:var(--text);
+    background:rgba(34,211,238,.06);
+    outline:none;
   }
 
   .section-title::after {
     content:"";
     flex:1;
     border-top:1px solid var(--line);
+  }
+
+  .section-chev {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:14px;
+    height:14px;
+    color:var(--accent);
+    transition:transform .18s ease;
+  }
+
+  .section-count {
+    min-width:22px;
+    padding:2px 7px;
+    border:1px solid var(--line);
+    border-radius:999px;
+    background:var(--panel);
+    color:#cce3f8;
+    font-size:11px;
+    letter-spacing:0;
+    text-transform:none;
+    text-align:center;
   }
 
   .doc-card {
@@ -156,6 +205,11 @@
   .badge.meeting {
     border-color:rgba(251,113,133,.45);
     color:#ffd5dc;
+  }
+
+  .badge.spss {
+    border-color:rgba(167,139,250,.5);
+    color:#e1d8ff;
   }
 
   .meeting-list {
@@ -306,8 +360,12 @@
     <p class="summary">프로토콜 명세, 모델별 보조 문서, 회의 정리 HTML을 한 곳에서 여는 시작 페이지입니다.</p>
   </header>
 
-  <section class="doc-section" aria-labelledby="protocol-section">
-    <h2 class="section-title" id="protocol-section">Protocol</h2>
+  <details class="doc-section" open aria-labelledby="protocol-section">
+    <summary class="section-title" id="protocol-section">
+      <span class="section-chev" aria-hidden="true">▶</span>
+      Protocol
+      <span class="section-count">2</span>
+    </summary>
     <div class="doc-list">
       <a class="doc-card" href="protocol/protocol.html">
         <h2>라이다 바이너리 프로토콜</h2>
@@ -327,10 +385,14 @@
         </div>
       </a>
     </div>
-  </section>
+  </details>
 
-  <section class="doc-section" aria-labelledby="model-section">
-    <h2 class="section-title" id="model-section">Model Notes</h2>
+  <details class="doc-section" open aria-labelledby="model-section">
+    <summary class="section-title" id="model-section">
+      <span class="section-chev" aria-hidden="true">▶</span>
+      Model Notes
+      <span class="section-count">3</span>
+    </summary>
     <div class="doc-list">
       <a class="doc-card" href="models/falcon_k_index.html">
         <h2>Falcon K V3 가변 프레임 구조</h2>
@@ -358,12 +420,21 @@
           <span class="badge">Ouster</span>
         </div>
       </a>
+    </div>
+  </details>
 
+  <details class="doc-section" open aria-labelledby="spss-section">
+    <summary class="section-title" id="spss-section">
+      <span class="section-chev" aria-hidden="true">▶</span>
+      SPSS Map Core
+      <span class="section-count">4</span>
+    </summary>
+    <div class="doc-list">
       <a class="doc-card" href="models/spss_map_core_api_history.html">
         <h2>SPSS Map Core API 변경 이력</h2>
         <p>SPSS Map Core DLL의 API version별 변경 사항과 현재 engine handle 기반 구조를 정리한 문서입니다.</p>
         <div class="meta">
-          <span class="badge main">models/spss_map_core_api_history.html</span>
+          <span class="badge spss">models/spss_map_core_api_history.html</span>
           <span class="badge">API v11</span>
         </div>
       </a>
@@ -372,7 +443,7 @@
         <h2>SPSS Map Core 현재 구현 정리</h2>
         <p>SPSS Map Core DLL의 현재 구현 상태와 주요 함수, 데이터 구조를 정리한 문서입니다.</p>
         <div class="meta">
-          <span class="badge main">models/spss_map_core_current_implementation.html</span>
+          <span class="badge spss">models/spss_map_core_current_implementation.html</span>
           <span class="badge">Implementation</span>
         </div>
       </a>
@@ -381,7 +452,7 @@
         <h2>SPSS Map Core 동작 흐름 도식</h2>
         <p>ProcessFrame 5단계 파이프라인, 좌표 변환, 후보 검출 알고리즘, 호출 시퀀스를 SVG 도식으로 시각화한 문서입니다.</p>
         <div class="meta">
-          <span class="badge main">models/spss_map_core_workflow.html</span>
+          <span class="badge spss">models/spss_map_core_workflow.html</span>
           <span class="badge">Workflow</span>
         </div>
       </a>
@@ -390,15 +461,19 @@
         <h2>SPSS Container Mapping 아이디어</h2>
         <p>SPSS 후보 영역을 컨테이너 단위로 매핑하는 아이디어와 설계 메모를 정리한 문서입니다.</p>
         <div class="meta">
-          <span class="badge main">models/spss_container_mapping_idea.html</span>
+          <span class="badge spss">models/spss_container_mapping_idea.html</span>
           <span class="badge">Idea</span>
         </div>
       </a>
     </div>
-  </section>
+  </details>
 
-  <section class="doc-section" aria-labelledby="meeting-section">
-    <h2 class="section-title" id="meeting-section">Meeting</h2>
+  <details class="doc-section" open aria-labelledby="meeting-section">
+    <summary class="section-title" id="meeting-section">
+      <span class="section-chev" aria-hidden="true">▶</span>
+      Meeting
+      <span class="section-count">1</span>
+    </summary>
     <div class="meeting-list" id="meeting-list" aria-label="회의 정리 문서 목록">
       <a class="meeting-row" href="meetings/260427%20%EB%9D%BC%EC%9D%B4%EB%8B%A4_%EB%AF%B8%ED%8C%85_%EC%A0%95%EB%A6%AC.html" data-meeting-item>
         <div class="meeting-date">260427</div>
@@ -411,7 +486,7 @@
     </div>
     <div class="empty-page" id="meeting-empty">해당 페이지에 표시할 회의 문서가 없습니다.</div>
     <nav class="pagination" id="meeting-pagination" aria-label="회의 정리 페이지"></nav>
-  </section>
+  </details>
 
   <div class="note">
     새 HTML 파일을 추가할 때는 이 파일의 <code>doc-list</code> 영역에 같은 형태의 링크 카드를 하나 더 넣으면 됩니다.

@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ouster Reflectivity 적용 정리</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0b1020;
+    --panel:#111a2c;
+    --panel2:#17243a;
+    --line:#2b456d;
+    --text:#eef6ff;
+    --muted:#9db6d8;
+    --cyan:#4cc9f0;
+    --green:#5ee0a3;
+    --yellow:#ffd166;
+    --red:#ff6b6b;
+    --purple:#c5a3ff;
+    --mono:'JetBrains Mono', Consolas, monospace;
+    --sans:'Noto Sans KR', 'Segoe UI', sans-serif;
+  }
+
+  * { box-sizing:border-box; margin:0; padding:0; }
+
+  body {
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 8% 0%, rgba(76,201,240,.15), transparent 30%),
+      radial-gradient(circle at 92% 12%, rgba(197,163,255,.12), transparent 26%),
+      radial-gradient(circle at 50% 100%, rgba(94,224,163,.08), transparent 28%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    padding:24px;
+  }
+
+  .wrap { max-width:1060px; margin:0 auto; }
+
+  header {
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:16px;
+    margin-bottom:18px;
+    padding-bottom:16px;
+    border-bottom:1px solid var(--line);
+  }
+
+  h1 {
+    font-size:28px;
+    line-height:1.15;
+    font-weight:900;
+    letter-spacing:-.4px;
+  }
+
+  h1 span { color:var(--green); }
+
+  .subtitle {
+    margin-top:8px;
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.6;
+  }
+
+  .badges {
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    justify-content:flex-end;
+  }
+
+  .badge {
+    font-family:var(--mono);
+    font-size:11px;
+    font-weight:700;
+    padding:6px 10px;
+    border:1px solid rgba(94,224,163,.36);
+    border-radius:999px;
+    background:rgba(94,224,163,.10);
+    color:var(--green);
+    white-space:nowrap;
+  }
+
+  .grid {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+
+  .card {
+    background:linear-gradient(180deg, rgba(23,36,58,.96), rgba(15,23,40,.96));
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:18px;
+    box-shadow:0 16px 36px rgba(0,0,0,.22);
+  }
+
+  .section { margin-top:14px; }
+
+  h2 {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:17px;
+    font-weight:900;
+    margin-bottom:12px;
+  }
+
+  h2::before {
+    content:"";
+    width:8px;
+    height:18px;
+    border-radius:3px;
+    background:var(--green);
+    display:inline-block;
+  }
+
+  h3 {
+    font-size:14px;
+    margin:14px 0 8px;
+    color:#def7ff;
+  }
+
+  p {
+    font-size:14px;
+    line-height:1.72;
+    color:#d8e8fb;
+  }
+
+  strong { color:white; }
+
+  code,
+  .mono {
+    font-family:var(--mono);
+  }
+
+  code {
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:5px;
+    padding:1px 5px;
+    color:#fff4c6;
+    font-size:.92em;
+  }
+
+  .note {
+    margin-top:10px;
+    padding:10px 12px;
+    background:rgba(255,209,102,.10);
+    border:1px solid rgba(255,209,102,.34);
+    border-radius:10px;
+    color:#fff0bf;
+    font-size:13px;
+    line-height:1.65;
+  }
+
+  .info {
+    margin-top:10px;
+    padding:10px 12px;
+    background:rgba(94,224,163,.10);
+    border:1px solid rgba(94,224,163,.32);
+    border-radius:10px;
+    color:#d8ffe9;
+    font-size:13px;
+    line-height:1.65;
+  }
+
+  .formula {
+    margin:10px 0;
+    padding:12px 14px;
+    background:#08111f;
+    border:1px solid rgba(76,201,240,.30);
+    border-radius:10px;
+    font-family:var(--mono);
+    font-size:13px;
+    line-height:1.8;
+    color:#eaf7ff;
+    overflow:auto;
+  }
+
+  .kv {
+    display:grid;
+    grid-template-columns:160px 1fr;
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+    margin-top:10px;
+  }
+
+  .kv div {
+    padding:10px 12px;
+    border-bottom:1px solid var(--line);
+    font-size:13px;
+  }
+
+  .kv div:nth-child(odd) {
+    background:rgba(76,201,240,.08);
+    color:#d8f4ff;
+    font-weight:700;
+  }
+
+  .kv div:nth-child(even) {
+    background:rgba(255,255,255,.03);
+    color:#dcecff;
+  }
+
+  .kv div:nth-last-child(-n+2) { border-bottom:none; }
+
+  .packet {
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    gap:8px;
+    margin-top:12px;
+  }
+
+  .byte {
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:10px;
+    background:rgba(255,255,255,.04);
+    padding:10px 8px;
+    text-align:center;
+    min-height:80px;
+  }
+
+  .byte .idx {
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:5px;
+  }
+
+  .byte .name {
+    font-size:13px;
+    font-weight:900;
+    color:white;
+  }
+
+  .byte .sub {
+    margin-top:5px;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--muted);
+  }
+
+  .byte.hot {
+    border-color:rgba(94,224,163,.70);
+    background:rgba(94,224,163,.13);
+    box-shadow:0 0 0 1px rgba(94,224,163,.18) inset;
+  }
+
+  .flow {
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:10px;
+    margin-top:12px;
+  }
+
+  .step {
+    border:1px solid rgba(94,224,163,.26);
+    background:rgba(94,224,163,.07);
+    border-radius:10px;
+    padding:12px;
+    min-height:126px;
+  }
+
+  .step-num {
+    width:26px;
+    height:26px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:50%;
+    background:var(--green);
+    color:#04150c;
+    font-family:var(--mono);
+    font-weight:900;
+    margin-bottom:8px;
+  }
+
+  .step-title {
+    font-size:13px;
+    font-weight:900;
+    margin-bottom:6px;
+  }
+
+  .step-text {
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.55;
+  }
+
+  .shape-table {
+    display:grid;
+    grid-template-columns:1.1fr .8fr .8fr .8fr 1.7fr;
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+    margin-top:12px;
+  }
+
+  .shape-table div {
+    padding:9px 10px;
+    border-right:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    font-size:13px;
+  }
+
+  .shape-table div:nth-child(5n) { border-right:none; }
+  .shape-table div:nth-last-child(-n+5) { border-bottom:none; }
+  .shape-table .head {
+    background:rgba(76,201,240,.12);
+    color:#d8f4ff;
+    font-weight:900;
+    font-family:var(--mono);
+    font-size:12px;
+  }
+  .shape-table .on {
+    color:#d9ffe9;
+    background:rgba(94,224,163,.08);
+  }
+
+  .palette {
+    display:grid;
+    grid-template-columns:repeat(8,1fr);
+    gap:6px;
+    margin-top:12px;
+  }
+
+  .swatch {
+    min-height:58px;
+    border-radius:9px;
+    border:1px solid rgba(255,255,255,.14);
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    padding:7px 4px;
+    font-family:var(--mono);
+    font-size:11px;
+    font-weight:700;
+    color:white;
+    text-shadow:0 1px 5px rgba(0,0,0,.65);
+  }
+
+  .code-block {
+    margin-top:10px;
+    background:#050912;
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:10px;
+    padding:14px;
+    overflow:auto;
+    font-family:var(--mono);
+    font-size:12px;
+    line-height:1.7;
+    color:#e8f2ff;
+  }
+
+  .code-block .green { color:#9ff2c9; }
+  .code-block .blue { color:#8ad7ff; }
+  .code-block .yellow { color:#ffe29c; }
+  .code-block .purple { color:#d8c5ff; }
+  .code-block .muted { color:#87a2c4; }
+
+  ul {
+    margin:8px 0 0 18px;
+    color:#dbeaff;
+    font-size:14px;
+    line-height:1.75;
+  }
+
+  @media (max-width:900px) {
+    body { padding:16px; }
+    header { align-items:flex-start; flex-direction:column; }
+    .badges { justify-content:flex-start; }
+    .grid,
+    .flow {
+      grid-template-columns:1fr;
+    }
+    .packet { grid-template-columns:repeat(2,1fr); }
+    .shape-table {
+      grid-template-columns:1fr;
+    }
+    .shape-table div,
+    .shape-table div:nth-child(5n),
+    .shape-table div:nth-last-child(-n+5) {
+      border-right:none;
+      border-bottom:1px solid var(--line);
+    }
+    .shape-table div:last-child { border-bottom:none; }
+    .kv { grid-template-columns:1fr; }
+    .kv div:nth-last-child(2) { border-bottom:1px solid var(--line); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Ouster <span>Reflectivity</span> 적용 방식</h1>
+      <p class="subtitle">
+        Ouster packet의 <code>RFL8</code> 값을 V3 바이너리의 Reflectivity shape로 저장하고,
+        뷰어에서는 이 값을 3D point cloud 색상에 우선 적용한다.
+      </p>
+    </div>
+    <div class="badges">
+      <div class="badge">RFL8</div>
+      <div class="badge">uint8</div>
+      <div class="badge">shape flag bit4</div>
+      <div class="badge">API v6</div>
+    </div>
+  </header>
+
+  <section class="grid">
+    <div class="card">
+      <h2>Reflectivity가 뭔가?</h2>
+      <p>
+        Reflectivity는 물체 표면이 라이다 빛을 얼마나 잘 반사했는지 나타내는 값이다.
+        단순히 가까우면 밝고 멀면 어두운 값이라기보다, 표면 재질과 반사 특성이 어느 정도 보정된 채널이다.
+      </p>
+      <div class="note">
+        그래서 3D point cloud에 Reflectivity를 색으로 입히면, 같은 공간이라도 금속, 벽, 바닥, 케이블 같은 표면 차이가 더 잘 드러난다.
+      </div>
+      <div class="kv">
+        <div>Range</div><div><code>RNG19</code>. 거리. 좌표 계산과 Depth에 사용.</div>
+        <div>Reflectivity</div><div><code>RFL8</code>. 보정 반사율. 이번에 별도 shape로 저장.</div>
+        <div>Signal</div><div><code>SIG16</code>. 수신 신호 세기. 2D Signal 이미지에 사용.</div>
+        <div>NearIR</div><div><code>NIR16</code>. 주변 적외선 성분. 기존 Ambient로 저장.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>packet 안에서의 위치</h2>
+      <p>
+        현재 Ouster 구현은 <code>RNG19_RFL8_SIG16_NIR16</code> 프로파일을 대상으로 한다.
+        채널 하나의 measurement block에서 Reflectivity는 range word 바로 다음 1바이트다.
+      </p>
+      <div class="packet">
+        <div class="byte">
+          <div class="idx">src[0..3]</div>
+          <div class="name">Range</div>
+          <div class="sub">RNG19</div>
+        </div>
+        <div class="byte hot">
+          <div class="idx">src[4]</div>
+          <div class="name">Reflectivity</div>
+          <div class="sub">RFL8</div>
+        </div>
+        <div class="byte">
+          <div class="idx">src[5..6]</div>
+          <div class="name">Signal</div>
+          <div class="sub">SIG16</div>
+        </div>
+        <div class="byte">
+          <div class="idx">src[7..8]</div>
+          <div class="name">NearIR</div>
+          <div class="sub">NIR16</div>
+        </div>
+        <div class="byte">
+          <div class="idx">src[9..11]</div>
+          <div class="name">reserved</div>
+          <div class="sub">padding</div>
+        </div>
+        <div class="byte">
+          <div class="idx">12B</div>
+          <div class="name">channel</div>
+          <div class="sub">fixed size</div>
+        </div>
+      </div>
+      <div class="formula">
+        reflectivity[channel] = src[4]<br>
+        value range = 0..255<br>
+        payload type = uint8
+      </div>
+    </div>
+  </section>
+
+  <section class="card section">
+    <h2>V3 shape에 어떻게 추가했나</h2>
+    <p>
+      기존 V3 출력은 <code>PCD</code>, <code>Depth</code>, <code>Ambient</code>, <code>Intensity</code> 네 가지가 기본이었다.
+      이번에 <code>Reflectivity</code>를 bit4로 추가해서, 요청 시 다섯 번째 shape로 저장한다.
+    </p>
+
+    <div class="shape-table">
+      <div class="head">Shape</div><div class="head">Flag</div><div class="head">Type</div><div class="head">Size</div><div class="head">의미</div>
+      <div>PCD</div><div>bit0 / 0x0001</div><div>float32</div><div>W x H x 3</div><div>XYZ point coordinate</div>
+      <div>Depth</div><div>bit1 / 0x0002</div><div>uint32</div><div>W x H x 1</div><div>Range 기반 depth 값</div>
+      <div>Ambient</div><div>bit2 / 0x0004</div><div>uint32</div><div>W x H x 1</div><div>NearIR 값을 저장</div>
+      <div>Intensity</div><div>bit3 / 0x0008</div><div>uint16</div><div>W x H x 1</div><div>Signal 값을 저장</div>
+      <div class="on">Reflectivity</div><div class="on">bit4 / 0x0010</div><div class="on">uint8</div><div class="on">W x H x 1</div><div class="on">Ouster RFL8 값을 저장</div>
+    </div>
+
+    <div class="info">
+      기본값은 호환성을 위해 <code>0x000F</code>로 유지했다. Reflectivity까지 포함하려면 <code>shapeFlags = 0x001F</code>로 요청한다.
+    </div>
+  </section>
+
+  <section class="card section">
+    <h2>저장 흐름</h2>
+    <div class="flow">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-title">PCAP 파싱</div>
+        <div class="step-text">Ouster UDP packet에서 column과 channel을 순서대로 읽는다.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-title">RFL8 추출</div>
+        <div class="step-text">각 channel block의 <code>src[4]</code>를 reflectivity 배열에 저장한다.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-title">Frame 누적</div>
+        <div class="step-text"><code>pointIndex = column * pixels + channel</code> 위치에 값을 넣는다.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-title">Header 작성</div>
+        <div class="step-text">shape descriptor에 Reflectivity를 <code>uint8</code> shape로 기록한다.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-title">Payload 저장</div>
+        <div class="step-text">Reflectivity는 1바이트라 엔디안 변환 없이 그대로 쓴다.</div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="muted">// Ouster channel block에서 RFL8 추출</span><br>
+<span class="green">column.reflectivity</span>[channel] = src[4];<br><br>
+<span class="muted">// frame payload 위치에 누적</span><br>
+pointIndex = columnIndex * pixelsPerColumn + channel;<br>
+<span class="green">frame.reflectivity</span>[pointIndex] = column.reflectivity[channel];<br><br>
+<span class="muted">// Reflectivity shape 요청 시 payload에 저장</span><br>
+if ((shapeFlags &amp; <span class="yellow">LBC_SHAPE_FLAG_REFLECTIVITY</span>) != 0)<br>
+{<br>
+&nbsp;&nbsp;WriteU8Array(ofs, frame.reflectivity.data(), frame.reflectivity.size());<br>
+}
+    </div>
+  </section>
+
+  <section class="card section">
+    <h2>뷰어에서 어떻게 썼나</h2>
+    <p>
+      뷰어는 V3 frame을 읽을 때 Reflectivity shape가 있으면 그 값을 우선 point intensity로 사용한다.
+      없으면 기존 Signal 값을 fallback으로 쓴다.
+    </p>
+
+    <div class="formula">
+      pointColorValues = reflectivityValues ?? signalValues ?? zeros<br><br>
+      point.Intensity = pointColorValues[index]
+    </div>
+
+    <p>
+      WPF의 <code>PointsVisual3D</code>는 point마다 완전히 다른 색을 직접 주기 어렵기 때문에,
+      값을 8개 bucket으로 나눈 뒤 bucket마다 다른 색의 point collection으로 그린다.
+    </p>
+
+    <div class="formula">
+      lowClip = percentile(validReflectivity, 2%)<br>
+      highClip = percentile(validReflectivity, 98%)<br><br>
+      normalized = clamp((value - lowClip) / (highClip - lowClip), 0, 1)<br>
+      boosted = sqrt(normalized)<br>
+      bucket = floor(boosted * 8)
+    </div>
+
+    <div class="palette">
+      <div class="swatch" style="background:#1B2A7A;">0</div>
+      <div class="swatch" style="background:#3152B7;">1</div>
+      <div class="swatch" style="background:#2677D8;">2</div>
+      <div class="swatch" style="background:#19A6D1;">3</div>
+      <div class="swatch" style="background:#22C5A2;">4</div>
+      <div class="swatch" style="background:#66D66F;">5</div>
+      <div class="swatch" style="background:#CBE75B;">6</div>
+      <div class="swatch" style="background:#FFF3A6;color:#111;text-shadow:none;">7</div>
+    </div>
+
+    <div class="note">
+      <strong>2%~98% clipping</strong>은 일부 아주 어둡거나 밝은 점 때문에 전체 색 대비가 죽는 것을 막기 위한 처리다.
+      <strong>sqrt</strong>는 중간 이하 값도 조금 더 잘 보이도록 밝기 분포를 끌어올리는 역할을 한다.
+    </div>
+  </section>
+
+  <section class="card section">
+    <h2>Signal과 Reflectivity의 역할 분리</h2>
+    <p>
+      둘 다 intensity처럼 보일 수 있지만, 이번 적용에서는 역할을 분리했다.
+    </p>
+    <div class="kv">
+      <div>Reflectivity</div><div>3D point cloud 색상에 우선 사용. 표면 반사 특성을 보는 목적.</div>
+      <div>Signal</div><div>하단 2D Signal 이미지에 사용. 센서가 받은 신호 세기 패턴을 보는 목적.</div>
+      <div>Fallback</div><div>Reflectivity shape가 없는 기존 V3 파일은 Signal로 3D 색상을 대신 입힌다.</div>
+      <div>Depth</div><div>선택/거리/깊이 이미지용이며, Reflectivity와 다른 값이다.</div>
+    </div>
+  </section>
+
+  <section class="card section">
+    <h2>주의할 점</h2>
+    <ul>
+      <li>Reflectivity는 Ouster의 <code>RFL8</code> 값이라 0..255 범위의 <code>uint8</code>로 저장한다.</li>
+      <li>기존 호환성을 위해 기본 shapeFlags는 <code>0x000F</code>이고, Reflectivity 포함 파일은 <code>0x001F</code>로 만든다.</li>
+      <li>Reflectivity는 이미 보정된 반사율 계열 값이므로 Signal과 완전히 같은 의미가 아니다.</li>
+      <li>현재 3D 색상은 8단계 bucket 표현이다. 더 부드러운 컬러맵이 필요하면 point renderer 구조를 바꿔야 한다.</li>
+      <li>Studio와 같은 색감을 내려면 컬러맵, clipping, gamma, auto-level 정책을 더 맞춰야 한다.</li>
+    </ul>
+  </section>
+</div>
+</body>
+</html>

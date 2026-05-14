@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SPSS Map Core 현재 구현 정리</title>
+  <style>
+    :root {
+      --ink: #111827;
+      --muted: #5f6f85;
+      --line: #d7e0ec;
+      --panel: #ffffff;
+      --soft: #f5f8fc;
+      --blue: #2563eb;
+      --cyan: #0e9fb8;
+      --red: #dc2626;
+      --green: #0f9f6e;
+      --code: #07111f;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #eef3f9;
+      font-family: "Segoe UI", "Malgun Gothic", Arial, sans-serif;
+      line-height: 1.58;
+    }
+
+    main {
+      width: min(1180px, calc(100vw - 40px));
+      margin: 32px auto 56px;
+    }
+
+    header {
+      padding: 28px 32px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(135deg, #ffffff 0%, #edf5ff 100%);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 18px 0 8px;
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 8px 0;
+    }
+
+    .lead {
+      max-width: 900px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border: 1px solid #b8cdf0;
+      border-radius: 999px;
+      background: #f7fbff;
+      color: #1e4f9d;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    section {
+      margin-top: 18px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .card {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfdff;
+    }
+
+    .card strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #0f172a;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .step {
+      position: relative;
+      min-height: 112px;
+      padding: 14px;
+      border: 1px solid #bfd2ee;
+      border-radius: 8px;
+      background: #f8fbff;
+    }
+
+    .step b {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--blue);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      background: #f4f7fb;
+      color: #334155;
+      font-weight: 700;
+    }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 5px;
+      background: #edf2f7;
+      color: #0f172a;
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 0.94em;
+    }
+
+    pre {
+      margin: 12px 0 0;
+      padding: 16px;
+      overflow: auto;
+      border-radius: 8px;
+      background: var(--code);
+      color: #dbeafe;
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .note {
+      padding: 14px 16px;
+      border-left: 4px solid var(--blue);
+      border-radius: 8px;
+      background: #eff6ff;
+      color: #1e3a8a;
+    }
+
+    .warn {
+      border-left-color: var(--red);
+      background: #fff5f5;
+      color: #7f1d1d;
+    }
+
+    .ok {
+      border-left-color: var(--green);
+      background: #f0fdf4;
+      color: #14532d;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--blue);
+    }
+
+    .dot.red { background: var(--red); }
+    .dot.cyan { background: var(--cyan); }
+    .dot.green { background: var(--green); }
+
+    @media (max-width: 900px) {
+      main {
+        width: min(100vw - 24px, 1180px);
+      }
+
+      header, section {
+        padding: 18px;
+      }
+
+      .grid,
+      .grid.three,
+      .flow {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>SPSS Map Core 현재 구현 정리</h1>
+      <p class="lead">
+        LidarInspector에 연결한 SPSS Map Core DLL 기반 BEV 처리, 설정 UI, 후보 영역 검출, 디버깅 표시가 현재 어떤 방식으로 동작하는지 분석용으로 정리한 문서입니다.
+      </p>
+      <div class="meta">
+        <span class="pill">작성일: 2026-05-14</span>
+        <span class="pill">대상: 90. UI/LidarInspector</span>
+        <span class="pill">DLL: 01. port/LabViewLidar/SpssMapCore</span>
+        <span class="pill">현재 기준: Grid 0.05, SideXz</span>
+      </div>
+    </header>
+
+    <section>
+      <h2>1. 전체 구조</h2>
+      <p>
+        현재 구현은 원본 포인트 클라우드를 바로 최종 측정하지 않고, 먼저 사용자가 조정한 좌표 정렬과 ROI를 적용한 뒤 BEV grid로 압축해서 후보 영역을 찾습니다.
+        후보 영역은 빨간 박스로 표시하고, 최종 치수나 틈 계산은 나중에 해당 후보 안의 원본 PCD를 다시 분석하는 방향으로 보는 것이 맞습니다.
+      </p>
+      <div class="flow">
+        <div class="step">
+          <b>1. 원본 PCD</b>
+          Ouster raw frame에서 포인트, reflectivity, depth 정보를 읽습니다.
+        </div>
+        <div class="step">
+          <b>2. 좌표 정렬</b>
+          Roll/Pitch/Yaw, Flip, Projection Plane 설정을 적용합니다.
+        </div>
+        <div class="step">
+          <b>3. BEV grid 생성</b>
+          DLL의 BEV cell에 height/depth, reflectivity, point count를 누적합니다.
+        </div>
+        <div class="step">
+          <b>4. 후보 검출</b>
+          local density, depth threshold, connected component로 후보 박스를 만듭니다.
+        </div>
+        <div class="step">
+          <b>5. 화면 디버깅</b>
+          BEV 모드, cell 통계, hover cell 값을 확인합니다.
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>2. 수정된 주요 파일</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>파일</th>
+            <th>역할</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>01. port/LabViewLidar/SpssMapCore/SpssMapCore.h</code><br><code>SpssMapCore.cpp</code></td>
+            <td>DLL API, 기본 BEV config, config 입력형 BEV 생성, cell 통계 누적을 담당합니다.</td>
+          </tr>
+          <tr>
+            <td><code>LidarInspector.Analysis/Modules/SpssMapCore/SpssMapCoreAdapter.cs</code></td>
+            <td>WPF 앱과 DLL 사이의 P/Invoke 연결, 좌표 변환, BEV map 생성, 후보 검출 알고리즘을 담당합니다.</td>
+          </tr>
+          <tr>
+            <td><code>LidarInspector.Analysis/Contracts/ModuleBevMap.cs</code></td>
+            <td>BEV grid 결과 배열을 앱으로 전달합니다. max/min height, height sum, reflectivity sum, point count를 포함합니다.</td>
+          </tr>
+          <tr>
+            <td><code>LidarInspector.App/ViewModels/Analysis/AnalysisPanelViewModel.cs</code></td>
+            <td>BEV bitmap 렌더링, preview mode, red candidate boxes, cell 통계, hover cell 정보를 표시합니다.</td>
+          </tr>
+          <tr>
+            <td><code>LidarInspector.App/MainWindow.xaml</code><br><code>MainWindow.xaml.cs</code></td>
+            <td>BEV 탭 UI, 설정 입력 UI, 마우스 hover 이벤트를 연결합니다.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>3. DLL API 변경 내용</h2>
+      <div class="grid">
+        <div class="card">
+          <strong>기본 config API</strong>
+          <p><code>SMC_InitializeDefaultBevConfig</code>는 이름이 길고 Set 의미가 강해서 <code>SMC_SetDefaultBevConfig</code>로 변경했습니다.</p>
+        </div>
+        <div class="card">
+          <strong>가변 설정형 API</strong>
+          <p><code>SMC_BuildBevMap</code>에서는 config 인자를 제거하고, 설정을 넣고 싶을 때는 <code>SMC_BuildBevMapWithConfig</code>를 사용하게 했습니다.</p>
+        </div>
+        <div class="card">
+          <strong>BEV cell 확장</strong>
+          <p><code>maxHeight</code>, <code>minHeight</code>, <code>heightSum</code>, <code>reflectivitySum</code>, <code>pointCount</code>를 cell마다 저장합니다.</p>
+        </div>
+        <div class="card">
+          <strong>API version</strong>
+          <p>cell 구조가 확장되었기 때문에 앱에서 확인하는 DLL API version은 현재 <code>3</code> 기준입니다.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>4. 현재 설정 UI</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>설정</th>
+            <th>현재 의미</th>
+            <th>주의점</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>Grid Size (m)</code></td>
+            <td>화면에 표시되는 BEV fine grid 크기입니다.</td>
+            <td>0.05는 보기와 정밀 위치 확인에 좋지만 cell당 point 수가 적습니다.</td>
+          </tr>
+          <tr>
+            <td><code>X/Y/Z Min/Max</code></td>
+            <td>정렬된 좌표계 기준 ROI 범위입니다.</td>
+            <td>Projection Plane에 따라 화면에서 보이는 축의 의미가 달라집니다.</td>
+          </tr>
+          <tr>
+            <td><code>Projection Plane</code></td>
+            <td><code>TopXy</code>, <code>FrontYz</code>, <code>SideXz</code> 중 BEV로 볼 평면을 정합니다.</td>
+            <td>현재 샘플에서는 <code>SideXz</code>가 사용자가 원하는 위/아래 방향 시야에 가장 가깝습니다.</td>
+          </tr>
+          <tr>
+            <td><code>Rotation X/Y/Z</code></td>
+            <td>원본 포인트를 BEV 계산 전에 3축 회전합니다.</td>
+            <td>현재 샘플은 대략 X=5, Y=0, Z=5 기준으로 맞춰 보고 있습니다.</td>
+          </tr>
+          <tr>
+            <td><code>Noise Filter</code></td>
+            <td>reflectivity와 cell point count 기준으로 약한 점/cell을 제거합니다.</td>
+            <td>너무 강하면 실제 경계선이 사라질 수 있습니다.</td>
+          </tr>
+          <tr>
+            <td><code>Candidate Params</code></td>
+            <td>후보 박스를 만들기 위한 grid, local density, depth 연결, 최소 크기 조건입니다.</td>
+            <td>현재 후보 검출의 핵심 튜닝 구간입니다.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>5. 현재 후보 검출 규칙</h2>
+      <p>
+        현재 후보 검출은 “사각형을 직접 인식”하는 방식이 아니라, BEV에서 점이 모여 있는 영역을 local density로 살리고,
+        평균 depth 차이가 작은 cell끼리만 연결한 뒤, 연결된 덩어리의 bounding box를 그리는 방식입니다.
+      </p>
+
+      <pre><code>입력: ModuleBevMap, SpssMapCoreSettings
+
+1. fine BEV cell에서 pointCount &gt; 0인 cell만 occupied로 본다.
+2. Candidate Cell 크기에 맞게 coarse grid로 다시 묶는다.
+   - Candidate Cell이 Grid Size와 같으면 거의 fine grid 그대로 판단한다.
+3. 각 coarse cell 주변 Local Radius 범위에서 occupied cell 개수를 센다.
+4. 주변 occupied 개수가 Min Local Cells 이상이면 search mask에 포함한다.
+5. search mask를 4-neighbor BFS로 connected component 처리한다.
+6. 인접 cell 연결 시 평균 depth 차이가 Depth Threshold보다 크면 연결하지 않는다.
+7. component의 occupied cell 수가 Min Region Cells보다 작으면 버린다.
+8. 남은 component의 bounding rectangle을 빨간 박스로 표시한다.
+9. 크기순으로 Max Boxes 개수만 화면에 보여준다.</code></pre>
+
+      <div class="grid three">
+        <div class="card">
+          <strong>Local Radius</strong>
+          <p>현재 cell 주변 몇 cell 범위를 볼지 정합니다. 값 2는 5x5 window를 의미합니다.</p>
+        </div>
+        <div class="card">
+          <strong>Min Local Cells</strong>
+          <p>주변 window 안에 occupied cell이 몇 개 이상 있어야 후보 mask로 살릴지 정합니다.</p>
+        </div>
+        <div class="card">
+          <strong>Depth Threshold</strong>
+          <p>인접한 후보 cell의 평균 depth 차이가 이 값보다 크면 같은 덩어리로 연결하지 않습니다.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>6. 현재 샘플에서 괜찮았던 값</h2>
+      <p>사용자가 현재 화면에서 괜찮다고 판단한 기준값은 아래 조합입니다.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th>값</th>
+            <th>해석</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>Grid Size</code></td>
+            <td>0.05 m</td>
+            <td>표시와 정밀 후보 확인을 세밀하게 가져갑니다.</td>
+          </tr>
+          <tr>
+            <td><code>Candidate Cell</code></td>
+            <td>0.05 m</td>
+            <td>후보 판단도 fine grid 기준으로 세밀하게 봅니다.</td>
+          </tr>
+          <tr>
+            <td><code>Local Radius</code></td>
+            <td>2 cells</td>
+            <td>현재 cell 주변 5x5 범위를 보며, 실제 반경은 약 0.10 m 수준입니다.</td>
+          </tr>
+          <tr>
+            <td><code>Min Local Cells</code></td>
+            <td>2</td>
+            <td>0.05 grid가 sparse하기 때문에 낮은 local 밀도 조건으로 후보를 살립니다.</td>
+          </tr>
+          <tr>
+            <td><code>Depth Threshold</code></td>
+            <td>0.02 m</td>
+            <td>2cm 이상 depth가 다르면 연결을 끊어 얇은 오연결을 줄입니다.</td>
+          </tr>
+          <tr>
+            <td><code>Min Region Cells</code></td>
+            <td>3000</td>
+            <td>너무 작은 후보는 제거하고 큰 면 후보만 남깁니다.</td>
+          </tr>
+          <tr>
+            <td><code>Max Boxes</code></td>
+            <td>20</td>
+            <td>화면에 표시할 후보 박스 수 제한입니다.</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="note">
+        <strong>해석:</strong>
+        0.05 grid는 cell 하나에 point가 적기 때문에 개별 cell 통계는 약합니다.
+        대신 local density와 depth threshold를 같이 써서 “넓게 모여 있지만 depth가 다른 연결은 끊는” 쪽으로 튜닝되어 있습니다.
+      </div>
+    </section>
+
+    <section>
+      <h2>7. BEV 디버깅 표시</h2>
+      <p>후보 검출이 왜 흔들리는지 보기 위해 BEV 탭에 디버깅 정보를 추가했습니다.</p>
+      <div class="grid">
+        <div class="card">
+          <strong>Preview Mode</strong>
+          <p><code>Density</code>, <code>PointCount</code>, <code>Height</code>, <code>Reflectivity</code>, <code>Edge</code> 모드를 제공합니다.</p>
+        </div>
+        <div class="card">
+          <strong>Cell 통계</strong>
+          <p>전체 cell, occupied cell, avg pts/cell, 1pt 비율, 2-5pt 비율, max point count를 표시합니다.</p>
+        </div>
+        <div class="card">
+          <strong>Hover 정보</strong>
+          <p>BEV 이미지 위에 마우스를 올리면 cell 좌표, point 수, avg depth, min/max, reflectivity를 표시합니다.</p>
+        </div>
+        <div class="card">
+          <strong>해석 포인트</strong>
+          <p>1pt cell 비율이 높으면 0.05 grid는 정밀하지만 통계 단위로는 sparse하다는 뜻입니다.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>8. 현재 구현의 장점과 한계</h2>
+      <div class="grid">
+        <div class="card">
+          <strong>장점</strong>
+          <ul>
+            <li>DLL 기반 BEV 생성과 UI 설정이 연결되어 실시간 튜닝이 가능합니다.</li>
+            <li>0.05 grid에서도 후보 박스를 볼 수 있어 정밀 확인이 쉽습니다.</li>
+            <li>depth threshold가 들어가서 높이/깊이가 다른 얇은 연결을 어느 정도 줄입니다.</li>
+            <li>마지막 config가 자동 저장되어 반복 튜닝이 쉬워졌습니다.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <strong>한계</strong>
+          <ul>
+            <li>현재 후보는 “구조적 사각형”이 아니라 “연결된 밀도 덩어리”입니다.</li>
+            <li>끊어진 실제 사각형은 놓칠 수 있고, 한 줄 연결은 붙을 수 있습니다.</li>
+            <li>0.05에서는 occupied cell의 대부분이 point 1개라 cell별 통계 안정성이 낮습니다.</li>
+            <li>최종 너비, 높이, 틈, 장애물 판단은 BEV만으로는 부족하고 원본 PCD 재분석이 필요합니다.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="warn note">
+        <strong>중요:</strong>
+        BEV는 후보를 찾기 위한 압축 표현입니다. 실제 SPSS 셀의 모서리 길이, 깊이, 틈, 장애물 판단은 후보 박스 안의 원본 3D PCD를 다시 꺼내서 계산해야 합니다.
+      </div>
+    </section>
+
+    <section>
+      <h2>9. 왜 0.05가 보기 좋은데 계산은 조심해야 하나</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Grid</th>
+            <th>장점</th>
+            <th>주의점</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>0.05 m</code></td>
+            <td>경계, 틈, 얇은 선이 잘 보이고 위치가 세밀합니다.</td>
+            <td>cell당 point가 적어서 평균 depth나 reflectivity가 불안정할 수 있습니다.</td>
+          </tr>
+          <tr>
+            <td><code>0.2 m</code></td>
+            <td>면 후보가 안정적으로 뭉쳐 보이고 connected component 판단이 쉬워집니다.</td>
+            <td>경계가 뭉개지고 작은 틈이나 얇은 구조가 사라질 수 있습니다.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        현재 방향은 <code>0.05</code>를 유지하되, 후보 판단은 local window와 depth threshold로 안정화하고,
+        최종 측정은 원본 PCD에서 다시 수행하는 방식입니다.
+      </p>
+    </section>
+
+    <section>
+      <h2>10. 다음 구현 후보</h2>
+      <div class="grid three">
+        <div class="card">
+          <strong>후보별 원본 PCD 재분석</strong>
+          <p>빨간 박스 안의 원본 포인트를 다시 가져와 평면, 모서리, 너비, 높이, 깊이, 틈을 계산합니다.</p>
+        </div>
+        <div class="card">
+          <strong>후보 그룹화</strong>
+          <p>개별 박스는 유지하고, X 범위와 depth가 비슷한 층들을 하나의 rack/group으로 묶습니다.</p>
+        </div>
+        <div class="card">
+          <strong>depth layer 분석</strong>
+          <p>평균 depth 하나가 아니라 depth range, variance, dominant depth layer를 보며 새/나뭇잎/배경을 걸러냅니다.</p>
+        </div>
+        <div class="card">
+          <strong>row/column projection</strong>
+          <p>후보 내부의 가로/세로 점 분포를 보고 사각형성, 경계선, 빈 줄을 평가합니다.</p>
+        </div>
+        <div class="card">
+          <strong>프레임 안정성 체크</strong>
+          <p>같은 설정으로 여러 프레임에서 후보 박스가 얼마나 흔들리는지 확인합니다.</p>
+        </div>
+        <div class="card">
+          <strong>설정 단위 개선</strong>
+          <p>현재 일부 파라미터는 cell 기준입니다. 나중에는 meter 기준과 cell 기준을 명확히 분리하는 것이 좋습니다.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>11. 코드 흐름 요약</h2>
+      <pre><code>SpssMapCoreAdapter.RunFrame()
+  - 원본 LidarPoint를 설정값 기준으로 회전/투영한 SpssPoint로 변환
+  - DLL SMC_BuildBevMapWithConfig() 호출
+  - native cell buffer를 ModuleBevMap 배열로 복사
+  - noise filter 적용
+  - DetectCandidateRegions()로 후보 박스 생성
+  - ModuleFrameResult로 UI에 전달
+
+AnalysisPanelViewModel.RenderCurrentBevPreview()
+  - 선택된 preview mode에 맞게 BEV bitmap 생성
+  - candidate rectangle을 빨간색으로 직접 그린다
+  - cell 통계 메시지를 갱신한다
+
+MainWindow.xaml.cs
+  - BEV 이미지 hover 위치를 bitmap pixel 좌표로 환산
+  - AnalysisPanelViewModel.UpdateBevCellProbe() 호출
+  - 해당 cell의 point/depth/reflectivity 정보를 화면에 표시</code></pre>
+    </section>
+
+    <section>
+      <h2>12. 분석 시 기억할 결론</h2>
+      <div class="note ok">
+        지금 결과물은 “SPSS 후보를 사람이 보며 튜닝하는 검사기”로는 충분히 의미 있는 상태입니다.
+        다만 이것을 곧바로 최종 자동 측정으로 쓰기보다는, BEV 후보 검출을 1차 관문으로 두고 원본 PCD 재분석을 붙이는 것이 다음 단계입니다.
+      </div>
+      <div class="legend">
+        <span><i class="dot red"></i>빨간 박스: 현재 connected component 후보</span>
+        <span><i class="dot cyan"></i>청록/파랑 점: BEV cell value</span>
+        <span><i class="dot green"></i>초록/노랑 점: 높은 height 또는 높은 value</span>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

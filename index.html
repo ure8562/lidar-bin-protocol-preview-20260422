@@ -309,20 +309,20 @@
   <section class="doc-section" aria-labelledby="protocol-section">
     <h2 class="section-title" id="protocol-section">Protocol</h2>
     <div class="doc-list">
-      <a class="doc-card" href="protocol.html">
+      <a class="doc-card" href="protocol/protocol.html">
         <h2>라이다 바이너리 프로토콜</h2>
         <p>Header, field 배치, 데이터 타입 등 LiDAR 바이너리 파일 구조를 정리한 문서입니다.</p>
         <div class="meta">
-          <span class="badge main">protocol.html</span>
+          <span class="badge main">protocol/protocol.html</span>
           <span class="badge">명세</span>
         </div>
       </a>
 
-      <a class="doc-card" href="gps_protocol.html">
+      <a class="doc-card" href="protocol/gps_protocol.html">
         <h2>GPS Protocol</h2>
         <p>GPSAE header, packet field, 위도/경도 각도 변환 공식을 정리한 문서입니다.</p>
         <div class="meta">
-          <span class="badge gps">gps_protocol.html</span>
+          <span class="badge gps">protocol/gps_protocol.html</span>
           <span class="badge">GPS</span>
         </div>
       </a>
@@ -332,30 +332,66 @@
   <section class="doc-section" aria-labelledby="model-section">
     <h2 class="section-title" id="model-section">Model Notes</h2>
     <div class="doc-list">
-      <a class="doc-card" href="falcon_k_index.html">
+      <a class="doc-card" href="models/falcon_k_index.html">
         <h2>Falcon K V3 가변 프레임 구조</h2>
         <p>Falcon K 모델에서 IndexTable을 이용해 frame offset과 size를 읽는 방식을 정리한 문서입니다.</p>
         <div class="meta">
-          <span class="badge falcon">falcon_k_index.html</span>
+          <span class="badge falcon">models/falcon_k_index.html</span>
           <span class="badge">Falcon K</span>
         </div>
       </a>
 
-      <a class="doc-card" href="spss_map_core_api_history.html">
+      <a class="doc-card" href="models/ouster_reflectivity_apply.html">
+        <h2>Ouster Reflectivity 적용</h2>
+        <p>Ouster RFL8 반사율 값을 Reflectivity Shape에 매핑하고 보정 적용하는 과정을 정리한 문서입니다.</p>
+        <div class="meta">
+          <span class="badge falcon">models/ouster_reflectivity_apply.html</span>
+          <span class="badge">Ouster</span>
+        </div>
+      </a>
+
+      <a class="doc-card" href="models/ouster_signal_destagger.html">
+        <h2>Ouster Signal Destagger</h2>
+        <p>Ouster 센서의 staggered scan 데이터를 destagger 처리해 정렬된 이미지로 만드는 과정을 정리한 문서입니다.</p>
+        <div class="meta">
+          <span class="badge falcon">models/ouster_signal_destagger.html</span>
+          <span class="badge">Ouster</span>
+        </div>
+      </a>
+
+      <a class="doc-card" href="models/spss_map_core_api_history.html">
         <h2>SPSS Map Core API 변경 이력</h2>
         <p>SPSS Map Core DLL의 API version별 변경 사항과 현재 engine handle 기반 구조를 정리한 문서입니다.</p>
         <div class="meta">
-          <span class="badge main">spss_map_core_api_history.html</span>
+          <span class="badge main">models/spss_map_core_api_history.html</span>
           <span class="badge">API v11</span>
         </div>
       </a>
 
-      <a class="doc-card" href="spss_map_core_workflow.html">
+      <a class="doc-card" href="models/spss_map_core_current_implementation.html">
+        <h2>SPSS Map Core 현재 구현 정리</h2>
+        <p>SPSS Map Core DLL의 현재 구현 상태와 주요 함수, 데이터 구조를 정리한 문서입니다.</p>
+        <div class="meta">
+          <span class="badge main">models/spss_map_core_current_implementation.html</span>
+          <span class="badge">Implementation</span>
+        </div>
+      </a>
+
+      <a class="doc-card" href="models/spss_map_core_workflow.html">
         <h2>SPSS Map Core 동작 흐름 도식</h2>
         <p>ProcessFrame 5단계 파이프라인, 좌표 변환, 후보 검출 알고리즘, 호출 시퀀스를 SVG 도식으로 시각화한 문서입니다.</p>
         <div class="meta">
-          <span class="badge main">spss_map_core_workflow.html</span>
+          <span class="badge main">models/spss_map_core_workflow.html</span>
           <span class="badge">Workflow</span>
+        </div>
+      </a>
+
+      <a class="doc-card" href="models/spss_container_mapping_idea.html">
+        <h2>SPSS Container Mapping 아이디어</h2>
+        <p>SPSS 후보 영역을 컨테이너 단위로 매핑하는 아이디어와 설계 메모를 정리한 문서입니다.</p>
+        <div class="meta">
+          <span class="badge main">models/spss_container_mapping_idea.html</span>
+          <span class="badge">Idea</span>
         </div>
       </a>
     </div>
@@ -364,7 +400,7 @@
   <section class="doc-section" aria-labelledby="meeting-section">
     <h2 class="section-title" id="meeting-section">Meeting</h2>
     <div class="meeting-list" id="meeting-list" aria-label="회의 정리 문서 목록">
-      <a class="meeting-row" href="260427%20%EB%9D%BC%EC%9D%B4%EB%8B%A4_%EB%AF%B8%ED%8C%85_%EC%A0%95%EB%A6%AC.html" data-meeting-item>
+      <a class="meeting-row" href="meetings/260427%20%EB%9D%BC%EC%9D%B4%EB%8B%A4_%EB%AF%B8%ED%8C%85_%EC%A0%95%EB%A6%AC.html" data-meeting-item>
         <div class="meeting-date">260427</div>
         <div class="meeting-title">
           <strong>라이다 미팅 정리</strong>

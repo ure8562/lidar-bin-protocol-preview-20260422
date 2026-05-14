@@ -157,7 +157,7 @@
   <div class="title-block">
     <div class="title-left">
       <h1>라이다 V3 바이너리 파일 프로토콜</h1>
-      <p>Magic <span>"RECORDAE"</span> &nbsp;·&nbsp; Header <span>256 bytes</span> &nbsp;·&nbsp; API <span>version 5</span></p>
+      <p>Magic <span>"RECORDAE"</span> &nbsp;·&nbsp; Header <span>256 bytes</span> &nbsp;·&nbsp; API <span>version 6</span></p>
     </div>
     <div class="title-badges">
       <a class="tbadge tbadge-g" href="index.html">INDEX</a>
@@ -251,7 +251,7 @@
       <div class="fc fc-strip"></div><div class="fc fc-name">shapeFlags</div>
       <div class="fc"><span class="pill p-u16">u16</span></div>
       <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">2</span></div>
-      <div class="fc fc-note">출력할 Shape 선택 비트 <span class="hl-b">PCD | Depth | Ambient | Intensity</span>. 파일 저장은 BE</div>
+      <div class="fc fc-note">출력할 Shape 선택 비트 <span class="hl-b">PCD | Depth | Ambient | Intensity | Reflectivity</span>. 파일 저장은 BE</div>
     </div>
 
     <div class="repeat-tag">아래 블록은 Shape 슬롯 수만큼 반복 (최대 7회 × 30B = 210B)</div>
@@ -262,7 +262,7 @@
         <div class="fc fc-strip"></div><div class="fc fc-name">shapeType</div>
         <div class="fc"><span class="pill p-u16">u16</span></div>
         <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">2</span></div>
-        <div class="fc fc-note">Shape flag와 같은 비트값. PCD=1, Depth=2, Ambient=4, Intensity=8</div>
+        <div class="fc fc-note">Shape flag와 같은 비트값. PCD=1, Depth=2, Ambient=4, Intensity=8, Reflectivity=16</div>
       </div>
 
       <div class="f-row f-geo">
@@ -337,6 +337,9 @@
       <div class="info-row">
         <div class="ic ic-strip strip-y"></div><div class="ic ic-name">Intensity</div><div class="ic">W×H×2</div><div class="ic">bit3</div><div class="ic ic-note">uint16 BE. intensity / reflectance / signal</div>
       </div>
+      <div class="info-row">
+        <div class="ic ic-strip strip-p"></div><div class="ic ic-name">Reflectivity</div><div class="ic">W×H×1</div><div class="ic">bit4</div><div class="ic ic-note">uint8. Ouster RFL8 보정 반사율 값을 보존</div>
+      </div>
     </div>
   </div>
 
@@ -357,7 +360,7 @@
         <div class="ic ic-strip strip-p"></div><div class="ic ic-name">3 G192</div><div class="ic">ECHO_1<br>ECHO_2</div><div class="ic">192×Azimuth<br>Ambient 576×Azimuth</div><div class="ic ic-note"><code>reserved0</code> 하위 8비트로 echo 선택. 0은 ECHO_1</div>
       </div>
       <div class="info-row">
-        <div class="ic ic-strip strip-b"></div><div class="ic ic-name">4 Ouster OS-1</div><div class="ic">ECHO_1<br>STRONGEST</div><div class="ic">pixels×columns</div><div class="ic ic-note">pcap과 같은 이름의 <code>.json</code> metadata 필요</div>
+        <div class="ic ic-strip strip-b"></div><div class="ic ic-name">4 Ouster OS-1</div><div class="ic">ECHO_1<br>STRONGEST</div><div class="ic">pixels×columns</div><div class="ic ic-note">pcap과 같은 이름의 <code>.json</code> metadata 필요. RNG/RFL/SIG/NIR 중 RFL8은 Reflectivity Shape로 저장</div>
       </div>
       <div class="info-row">
         <div class="ic ic-strip strip-r"></div><div class="ic ic-name">5 Falcon K</div><div class="ic">MERGED<br>DUAL</div><div class="ic">0×0</div><div class="ic ic-note">W/H가 아니라 IndexTable offset/size로 frame을 읽음</div>
@@ -401,16 +404,16 @@
         <div class="ic ic-strip"></div><div class="ic">항목</div><div class="ic">값</div><div class="ic">크기</div><div class="ic">설명</div>
       </div>
       <div class="info-row">
-        <div class="ic ic-strip strip-g"></div><div class="ic ic-name">API Version</div><div class="ic">5</div><div class="ic">-</div><div class="ic ic-note"><code>LBC_GetApiVersion()</code> 반환값</div>
+        <div class="ic ic-strip strip-g"></div><div class="ic ic-name">API Version</div><div class="ic">6</div><div class="ic">-</div><div class="ic ic-note"><code>LBC_GetApiVersion()</code> 반환값. Reflectivity Shape 추가로 v6부터 구분</div>
       </div>
       <div class="info-row">
         <div class="ic ic-strip strip-p"></div><div class="ic ic-name">Options</div><div class="ic">model<br>shapeFlags</div><div class="ic">20B</div><div class="ic ic-note"><code>LbcConvertOptions</code>. <code>reserved0</code>은 G192 echo 선택에 사용</div>
       </div>
       <div class="info-row">
-        <div class="ic ic-strip strip-y"></div><div class="ic ic-name">Default</div><div class="ic">model=1<br>flags=0x000F</div><div class="ic">-</div><div class="ic ic-note"><code>options == null</code>이면 LidarStation + 모든 Shape 출력</div>
+        <div class="ic ic-strip strip-y"></div><div class="ic ic-name">Default</div><div class="ic">model=1<br>flags=0x000F</div><div class="ic">-</div><div class="ic ic-note"><code>options == null</code>이면 기존 공통 Shape(PCD/Depth/Ambient/Intensity) 출력. Reflectivity 포함 요청은 0x001F</div>
       </div>
       <div class="info-row">
-        <div class="ic ic-strip strip-r"></div><div class="ic ic-name">Shape 검증</div><div class="ic">0x0001~0x0008</div><div class="ic">u16</div><div class="ic ic-note">PCD, Depth, Ambient, Intensity 조합만 허용. 0은 오류</div>
+        <div class="ic ic-strip strip-r"></div><div class="ic ic-name">Shape 검증</div><div class="ic">0x0001~0x0010</div><div class="ic">u16</div><div class="ic ic-note">PCD, Depth, Ambient, Intensity, Reflectivity 조합만 허용. 0은 오류</div>
       </div>
     </div>
   </div>

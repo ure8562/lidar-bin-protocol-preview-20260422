@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPSS Map Core DLL API 변경 이력</title>
+<style>
+  :root {
+    --ink:#111827;
+    --ink-soft:#374151;
+    --muted:#64748b;
+    --line:#e2e8f0;
+    --line-soft:#eef2f7;
+    --panel:#ffffff;
+    --soft:#f5f8fc;
+    --soft-2:#eef3f9;
+    --blue:#2563eb;
+    --blue-soft:#dbeafe;
+    --cyan:#0e9fb8;
+    --green:#059669;
+    --green-soft:#d1fae5;
+    --amber:#b45309;
+    --amber-soft:#fef3c7;
+    --red:#dc2626;
+    --red-soft:#fee2e2;
+    --gray:#6b7280;
+    --gray-soft:#f1f5f9;
+    --code-bg:#0f172a;
+    --code-ink:#e2e8f0;
+    --mono:"JetBrains Mono","Cascadia Mono",Consolas,monospace;
+    --sans:"Segoe UI","Malgun Gothic","Noto Sans KR",Arial,sans-serif;
+  }
+
+  * { box-sizing:border-box; }
+
+  html { scroll-behavior:smooth; }
+
+  body {
+    margin:0;
+    color:var(--ink);
+    background:var(--soft-2);
+    font-family:var(--sans);
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .layout {
+    display:grid;
+    grid-template-columns:240px minmax(0, 1fr);
+    gap:32px;
+    width:min(1280px, calc(100% - 48px));
+    margin:0 auto;
+    padding:32px 0 64px;
+  }
+
+  /* ── Sidebar TOC ─────────────────────────── */
+  aside {
+    position:sticky;
+    top:24px;
+    align-self:start;
+    max-height:calc(100vh - 48px);
+    overflow-y:auto;
+    padding:18px 16px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:var(--panel);
+    font-size:13.5px;
+  }
+
+  aside .toc-title {
+    margin:0 0 12px;
+    padding:0 4px 10px;
+    border-bottom:1px solid var(--line-soft);
+    color:var(--muted);
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+  }
+
+  aside ol {
+    margin:0;
+    padding:0;
+    list-style:none;
+    counter-reset:toc;
+  }
+
+  aside ol li {
+    counter-increment:toc;
+    margin:0;
+  }
+
+  aside ol li a {
+    display:flex;
+    gap:10px;
+    align-items:baseline;
+    padding:7px 8px;
+    border-radius:6px;
+    color:var(--ink-soft);
+    text-decoration:none;
+    transition:background .15s, color .15s;
+  }
+
+  aside ol li a::before {
+    content:counter(toc, decimal-leading-zero);
+    flex:none;
+    color:var(--muted);
+    font-family:var(--mono);
+    font-size:11px;
+    font-weight:700;
+  }
+
+  aside ol li a:hover {
+    color:var(--blue);
+    background:var(--soft);
+  }
+
+  /* ── Header ──────────────────────────────── */
+  header {
+    padding:32px 36px;
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:linear-gradient(135deg, #ffffff 0%, #eaf2ff 100%);
+  }
+
+  h1 {
+    margin:0 0 12px;
+    font-size:30px;
+    line-height:1.25;
+    letter-spacing:-0.01em;
+  }
+
+  h2 {
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin:0 0 18px;
+    padding-bottom:14px;
+    border-bottom:1px solid var(--line-soft);
+    font-size:21px;
+    letter-spacing:-0.01em;
+  }
+
+  h2 .num {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:30px;
+    height:30px;
+    border-radius:8px;
+    background:var(--blue);
+    color:#fff;
+    font-family:var(--mono);
+    font-size:14px;
+    font-weight:700;
+  }
+
+  h3 {
+    margin:0 0 10px;
+    font-size:15.5px;
+    font-weight:700;
+    color:var(--ink);
+  }
+
+  p {
+    margin:0 0 12px;
+    color:var(--ink-soft);
+  }
+
+  .lead {
+    max-width:880px;
+    margin:0;
+    color:var(--muted);
+    font-size:15px;
+    line-height:1.7;
+  }
+
+  a { color:var(--blue); }
+
+  code {
+    padding:1.5px 6px;
+    border-radius:4px;
+    background:var(--gray-soft);
+    color:var(--ink);
+    font-family:var(--mono);
+    font-size:0.88em;
+  }
+
+  pre {
+    margin:14px 0 0;
+    padding:16px 18px;
+    overflow:auto;
+    border-radius:10px;
+    background:var(--code-bg);
+    color:var(--code-ink);
+    font-family:var(--mono);
+    font-size:12.5px;
+    line-height:1.65;
+  }
+
+  pre code {
+    padding:0;
+    background:transparent;
+    color:inherit;
+    font-size:inherit;
+  }
+
+  /* ── Sections ─────────────────────────────── */
+  section.section {
+    margin-top:24px;
+    padding:28px 32px;
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:var(--panel);
+    scroll-margin-top:20px;
+  }
+
+  /* ── Tables ───────────────────────────────── */
+  table {
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    overflow:hidden;
+    border:1px solid var(--line);
+    border-radius:10px;
+  }
+
+  th, td {
+    padding:13px 16px;
+    border-bottom:1px solid var(--line-soft);
+    vertical-align:top;
+    text-align:left;
+  }
+
+  th {
+    background:var(--soft);
+    color:var(--ink);
+    font-size:12.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+  }
+
+  td {
+    color:var(--ink-soft);
+    font-size:14px;
+  }
+
+  tbody tr:hover { background:var(--soft); }
+  tbody tr:last-child td { border-bottom:0; }
+
+  /* ── Pills / Badges ───────────────────────── */
+  .meta {
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:20px;
+  }
+
+  .pill {
+    display:inline-flex;
+    align-items:center;
+    height:26px;
+    padding:0 12px;
+    border-radius:999px;
+    background:var(--gray-soft);
+    color:var(--ink-soft);
+    font-family:var(--mono);
+    font-size:11.5px;
+    font-weight:600;
+  }
+
+  .pill.hot {
+    background:var(--blue-soft);
+    color:var(--blue);
+  }
+
+  .pill.green {
+    background:var(--green-soft);
+    color:var(--green);
+  }
+
+  .badge {
+    display:inline-flex;
+    align-items:center;
+    padding:3px 9px;
+    border-radius:6px;
+    font-family:var(--mono);
+    font-size:12px;
+    font-weight:700;
+  }
+
+  .badge.current  { background:var(--green-soft); color:var(--green); }
+  .badge.kept     { background:var(--blue-soft);  color:var(--blue);  }
+  .badge.merged   { background:var(--amber-soft); color:var(--amber); }
+  .badge.removed  { background:var(--red-soft);   color:var(--red);   }
+  .badge.deprecated{ background:var(--gray-soft); color:var(--gray);  }
+
+  /* ── Grids ────────────────────────────────── */
+  .grid {
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:16px;
+  }
+
+  .cards-3 {
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:16px;
+  }
+
+  .card {
+    min-height:100%;
+    padding:20px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:var(--soft);
+  }
+
+  .card pre { margin-top:12px; }
+
+  /* ── Note ─────────────────────────────────── */
+  .note {
+    margin-top:18px;
+    padding:14px 18px;
+    border-left:4px solid var(--amber);
+    border-radius:6px;
+    background:var(--amber-soft);
+    color:#7c4a03;
+    font-size:14px;
+  }
+
+  /* ── Flow ─────────────────────────────────── */
+  .flow {
+    display:grid;
+    grid-template-columns:repeat(5, minmax(0, 1fr));
+    gap:10px;
+    margin-top:18px;
+  }
+
+  .flow-step {
+    position:relative;
+    padding:16px 14px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:var(--panel);
+  }
+
+  .flow-step::before {
+    content:"";
+    position:absolute;
+    top:0;
+    left:0;
+    width:36px;
+    height:3px;
+    border-radius:10px 0 0 0;
+    background:var(--blue);
+  }
+
+  .flow-step strong {
+    display:block;
+    margin-bottom:6px;
+    font-size:14.5px;
+    color:var(--ink);
+  }
+
+  .flow-step span {
+    display:block;
+    color:var(--muted);
+    font-size:12.5px;
+    line-height:1.55;
+  }
+
+  /* ── Misc ─────────────────────────────────── */
+  ul { margin:8px 0 0; padding-left:20px; }
+  li { margin:5px 0; color:var(--ink-soft); }
+
+  .version {
+    white-space:nowrap;
+    font-family:var(--mono);
+    font-size:13.5px;
+    font-weight:700;
+    color:var(--blue);
+  }
+
+  .small {
+    margin-bottom:14px;
+    color:var(--muted);
+    font-size:13px;
+  }
+
+  .file {
+    font-family:var(--mono);
+    font-size:12.5px;
+    color:var(--cyan);
+    word-break:break-all;
+  }
+
+  .ok      { color:var(--green); font-weight:700; }
+  .warn    { color:var(--amber); font-weight:700; }
+  .danger  { color:var(--red);   font-weight:700; }
+
+  /* ── Responsive ───────────────────────────── */
+  @media (max-width:1024px) {
+    .layout { grid-template-columns:1fr; }
+    aside {
+      position:static;
+      max-height:none;
+    }
+  }
+
+  @media (max-width:760px) {
+    .grid,
+    .cards-3,
+    .flow { grid-template-columns:1fr; }
+
+    section.section { padding:22px 20px; }
+    header { padding:24px 22px; }
+    h1 { font-size:24px; }
+
+    th, td { display:block; width:100%; }
+    th { border-bottom:0; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ───────── Sidebar TOC ───────── -->
+  <aside>
+    <div class="toc-title">목차</div>
+    <ol>
+      <li><a href="#sec-1">현재 결론</a></li>
+      <li><a href="#sec-2">API 버전별 변경 이력</a></li>
+      <li><a href="#sec-3">현재 공개 API</a></li>
+      <li><a href="#sec-4">DLL 내부 구성</a></li>
+      <li><a href="#sec-5">핵심 구조체</a></li>
+      <li><a href="#sec-6">호출 예시</a></li>
+      <li><a href="#sec-7">LidarInspector 연결</a></li>
+      <li><a href="#sec-8">제거된 API</a></li>
+      <li><a href="#sec-9">다음 단계 메모</a></li>
+    </ol>
+  </aside>
+
+  <!-- ───────── Main ───────── -->
+  <main>
+    <header>
+      <h1>SPSS Map Core DLL API 변경 이력과 현재 구조</h1>
+      <p class="lead">
+        이 문서는 <code>01. port/LabViewLidar/SpssMapCore</code> DLL을 현재 <strong>engine handle 기반</strong>으로 정리한 결과를 설명합니다.
+        특히 <code>SMC_ProcessFrame</code>은 처리만 수행하고, 결과는 <code>SMC_GetLast...</code> API로 가져오는 v11 구조를 기준으로 합니다.
+      </p>
+      <div class="meta">
+        <span class="pill hot">Current API v11</span>
+        <span class="pill">Generated: 2026-05-14</span>
+        <span class="pill green">Process → GetLast</span>
+        <span class="pill">UTF-8</span>
+      </div>
+    </header>
+
+    <!-- 1 -->
+    <section class="section" id="sec-1">
+      <h2><span class="num">1</span> 현재 결론</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>API 방향</h3>
+          <p>
+            현재 DLL은 handle 없는 단발성 API를 제거하고, <code>SMC_Create</code>로 만든 engine handle을 중심으로 동작합니다.
+            호출자는 설정을 engine에 저장하고, frame을 처리한 뒤 마지막 결과를 필요한 만큼 가져갑니다.
+          </p>
+          <pre><code>SMC_Create(&handle)
+SMC_SetConfig(handle, &config)
+SMC_ProcessFrame(handle, points, pointCount)
+
+SMC_GetLastBevMapInfo(handle, &mapInfo)
+SMC_GetLastAnalysisInfo(handle, &analysisInfo)
+SMC_GetLastBevCells(handle, cells, capacity, &writtenCount)
+SMC_GetLastCandidateRegions(handle, regions, capacity, &writtenCount)
+
+SMC_Destroy(handle)</code></pre>
+        </div>
+        <div class="card">
+          <h3>왜 이렇게 바꿨나</h3>
+          <p>
+            이전에는 <code>SMC_ProcessFrame</code>이 처리와 결과 복사를 동시에 맡아서 인자가 많아졌습니다.
+            v11부터는 처리와 결과 조회를 분리해서 함수 의미가 단순해졌고, LabVIEW/C#/다른 호출자도 같은 순서로 사용할 수 있습니다.
+          </p>
+          <ul>
+            <li><code>ProcessFrame</code>: frame 처리와 내부 last result 갱신</li>
+            <li><code>GetLast...</code>: 마지막 결과를 호출자 버퍼로 복사</li>
+            <li>새 frame을 처리하면 이전 결과는 덮어씀</li>
+            <li><code>SetConfig</code>가 호출되면 이전 결과는 무효 처리</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section class="section" id="sec-2">
+      <h2><span class="num">2</span> API 버전별 변경 이력</h2>
+      <p class="small">
+        v1~v2는 초기 실험 단계라 세부 ABI 기록이 제한적입니다. 아래 표는 현재 코드와 작업 흐름을 기준으로 복원한 실무용 변경 이력입니다.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:70px">버전</th>
+            <th style="width:240px">핵심 변경</th>
+            <th>의미</th>
+            <th style="width:140px">현재 상태</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="version">v1</td>
+            <td>초기 BEV grid 생성 실험</td>
+            <td>원본 점을 ROI/grid 기준으로 cell에 누적하는 최소 형태입니다.</td>
+            <td><span class="badge deprecated">폐기됨</span></td>
+          </tr>
+          <tr>
+            <td class="version">v2</td>
+            <td>기본 BEV config와 단발성 호출 정리</td>
+            <td><code>SMC_BuildBevMap</code> 중심의 handle 없는 함수 구조였습니다.</td>
+            <td><span class="badge deprecated">폐기됨</span></td>
+          </tr>
+          <tr>
+            <td class="version">v3</td>
+            <td><code>SpssBevCell</code> 정보 확장</td>
+            <td>cell별 <code>maxHeight</code>, <code>minHeight</code>, <code>heightSum</code>, <code>reflectivitySum</code>, <code>pointCount</code>를 담기 시작했습니다.</td>
+            <td><span class="badge kept">구조체 유지</span></td>
+          </tr>
+          <tr>
+            <td class="version">v4</td>
+            <td>가변 설정형 BEV 흐름 실험</td>
+            <td>고정 기본값 대신 UI에서 grid/ROI를 바꿔가며 테스트하는 방향으로 이동했습니다.</td>
+            <td><span class="badge merged">SpssConfig로 통합</span></td>
+          </tr>
+          <tr>
+            <td class="version">v5</td>
+            <td>설정 구조 분리</td>
+            <td><code>SpssBevConfig</code>, 후보 설정, 정렬 설정, noise 설정을 나누는 방향으로 정리했습니다.</td>
+            <td><span class="badge kept">유지</span></td>
+          </tr>
+          <tr>
+            <td class="version">v6</td>
+            <td>engine handle 구조 도입</td>
+            <td><code>SMC_Create</code>, <code>SMC_Destroy</code>, <code>SMC_SetConfig</code>, <code>SMC_ProcessFrame</code> 형태가 생겼습니다.</td>
+            <td><span class="badge kept">기반 유지</span></td>
+          </tr>
+          <tr>
+            <td class="version">v7</td>
+            <td>좌표 정렬을 DLL로 이동</td>
+            <td>UI가 변환한 BEV 좌표를 넘기는 대신, 원본 meter 좌표를 넘기고 DLL에서 rotation/projection/flip을 적용하게 했습니다.</td>
+            <td><span class="badge kept">유지</span></td>
+          </tr>
+          <tr>
+            <td class="version">v8</td>
+            <td>noise filter를 DLL로 이동</td>
+            <td>reflectivity 기반 점 필터와 cell point count 필터를 DLL 내부 처리로 옮겼습니다.</td>
+            <td><span class="badge kept">유지</span></td>
+          </tr>
+          <tr>
+            <td class="version">v9</td>
+            <td>후보 사각형 검출을 DLL로 이동</td>
+            <td><code>SMC_ProcessFrameWithCandidates</code>로 BEV cell과 후보 영역을 함께 반환했습니다.</td>
+            <td><span class="badge removed">v11에서 제거</span></td>
+          </tr>
+          <tr>
+            <td class="version">v10</td>
+            <td>handle 없는 공개 API 제거</td>
+            <td><code>SMC_SetDefaultBevConfig</code>, <code>SMC_BuildBevMap</code>, <code>SMC_BuildBevMapWithConfig</code>를 제거하고 engine 중심 API만 남겼습니다.</td>
+            <td><span class="badge kept">유지</span></td>
+          </tr>
+          <tr>
+            <td class="version">v11</td>
+            <td><code>Process → GetLast</code> 구조로 변경</td>
+            <td><code>SMC_ProcessFrame</code>은 처리만 하고, 결과는 <code>SMC_GetLast...</code> 함수로 가져오게 했습니다. <code>SMC_ProcessFrameWithCandidates</code>는 제거했습니다.</td>
+            <td><span class="badge current">현재 버전</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 3 -->
+    <section class="section" id="sec-3">
+      <h2><span class="num">3</span> 현재 공개 API</h2>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:260px">API</th>
+            <th>역할</th>
+            <th style="width:260px">주의</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>SMC_GetApiVersion</code></td>
+            <td>현재 C ABI 버전을 반환합니다. 현재 값은 <code>11</code>입니다.</td>
+            <td>UI는 <code>11</code> 미만이면 로딩하지 않습니다.</td>
+          </tr>
+          <tr>
+            <td><code>SMC_GetDefaultConfig</code></td>
+            <td>새 engine/UI 설정 패널에 사용할 기본 <code>SpssConfig</code>를 채웁니다.</td>
+            <td>engine 상태는 바꾸지 않습니다.</td>
+          </tr>
+          <tr>
+            <td><code>SMC_Create</code></td>
+            <td>SPSS 분석 engine을 만들고 handle을 반환합니다.</td>
+            <td>반환 handle은 이후 모든 API의 기준입니다.</td>
+          </tr>
+          <tr>
+            <td><code>SMC_Destroy</code></td>
+            <td>engine을 해제합니다.</td>
+            <td>해제 후 handle 재사용 금지.</td>
+          </tr>
+          <tr>
+            <td><code>SMC_GetConfig</code></td>
+            <td>현재 engine 설정을 복사해 가져옵니다.</td>
+            <td>일부 설정만 바꾸고 싶을 때 기준값으로 사용합니다.</td>
+          </tr>
+          <tr>
+            <td><code>SMC_SetConfig</code></td>
+            <td>수정한 전체 설정을 engine에 반영합니다.</td>
+            <td>설정이 바뀌면 이전 last result는 비웁니다.</td>
+          </tr>
+          <tr>
+            <td><code>SMC_ProcessFrame</code></td>
+            <td>원본 점 배열을 현재 설정으로 처리하고 engine 내부 last result를 갱신합니다.</td>
+            <td>결과를 직접 반환하지 않습니다.</td>
+          </tr>
+          <tr>
+            <td><code>SMC_GetLastBevMapInfo</code></td>
+            <td>마지막 BEV map의 폭/높이/cell 개수를 가져옵니다.</td>
+            <td>cell 배열 할당 전 먼저 호출합니다.</td>
+          </tr>
+          <tr>
+            <td><code>SMC_GetLastAnalysisInfo</code></td>
+            <td>입력점/변환점/ROI점/occupied cell/후보 개수 요약을 가져옵니다.</td>
+            <td>UI Overview와 batch export에 사용하기 좋습니다.</td>
+          </tr>
+          <tr>
+            <td><code>SMC_GetLastBevCells</code></td>
+            <td>마지막 BEV cell 배열을 호출자 버퍼로 복사합니다.</td>
+            <td><code>outputCells=null</code>이면 필요한 개수만 확인할 수 있습니다.</td>
+          </tr>
+          <tr>
+            <td><code>SMC_GetLastCandidateRegions</code></td>
+            <td>마지막 후보 사각형 배열을 호출자 버퍼로 복사합니다.</td>
+            <td>후보 좌표는 BEV fine grid 기준입니다.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 4 -->
+    <section class="section" id="sec-4">
+      <h2><span class="num">4</span> 현재 DLL 내부 구성</h2>
+      <div class="cards-3">
+        <div class="card">
+          <h3>Engine 상태</h3>
+          <p><code>SpssEngine</code>은 설정과 마지막 frame 결과를 보관합니다.</p>
+          <pre><code>magic
+config
+lastMapInfo
+lastAnalysisInfo
+lastCells
+lastCandidates</code></pre>
+        </div>
+        <div class="card">
+          <h3>설정 묶음</h3>
+          <p><code>SpssConfig</code> 하나 안에 BEV, 후보, 정렬, 필터 설정이 들어갑니다.</p>
+          <pre><code>SpssConfig
+  bev
+  candidate
+  alignment
+  noise</code></pre>
+        </div>
+        <div class="card">
+          <h3>마지막 결과</h3>
+          <p>처리 결과는 Get API가 복사해 갈 때까지 engine 내부에 남습니다.</p>
+          <pre><code>lastMapInfo
+lastAnalysisInfo
+lastCells[]
+lastCandidates[]</code></pre>
+        </div>
+      </div>
+
+      <div class="flow">
+        <div class="flow-step">
+          <strong>1. 입력</strong>
+          <span>원본 LiDAR 점을 meter 단위 <code>SpssPoint</code>로 전달</span>
+        </div>
+        <div class="flow-step">
+          <strong>2. 정렬</strong>
+          <span>rotation X/Y/Z, projection plane, flip 적용</span>
+        </div>
+        <div class="flow-step">
+          <strong>3. BEV</strong>
+          <span>ROI/grid 기준으로 <code>SpssBevCell</code> 누적</span>
+        </div>
+        <div class="flow-step">
+          <strong>4. 필터</strong>
+          <span>reflectivity와 cell point count 기준 noise 제거</span>
+        </div>
+        <div class="flow-step">
+          <strong>5. 후보</strong>
+          <span>local density + depth threshold로 후보 사각형 검출</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section class="section" id="sec-5">
+      <h2><span class="num">5</span> 핵심 구조체</h2>
+      <div class="grid">
+        <div class="card">
+          <h3><code>SpssPoint</code></h3>
+          <p>호출자가 DLL에 넘기는 원본 점입니다. 좌표는 meter 단위입니다.</p>
+          <pre><code>float x;
+float y;
+float z;
+float reflectivity;</code></pre>
+        </div>
+        <div class="card">
+          <h3><code>SpssBevCell</code></h3>
+          <p>BEV grid 한 칸의 누적 정보입니다.</p>
+          <pre><code>float maxHeight;
+float minHeight;
+float heightSum;
+float reflectivitySum;
+uint32_t pointCount;</code></pre>
+        </div>
+        <div class="card">
+          <h3><code>SpssCandidateRegion</code></h3>
+          <p>후보 사각형 정보입니다. 좌표는 BEV fine grid 기준입니다.</p>
+          <pre><code>id, x, y, width, height
+occupiedCellCount
+gridSizeMeters
+minDepth, maxDepth
+averageDepth
+averageReflectivity
+confidence</code></pre>
+        </div>
+        <div class="card">
+          <h3><code>SpssAnalysisInfo</code></h3>
+          <p>Overview와 batch 결과에 쓰기 좋은 frame 요약입니다.</p>
+          <pre><code>inputPointCount
+transformedPointCount
+roiPointCount
+bevWidth, bevHeight
+requiredCellCount
+occupiedCellCount
+requiredCandidateCount</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section class="section" id="sec-6">
+      <h2><span class="num">6</span> 호출 예시</h2>
+      <pre><code>SpssHandle handle = 0;
+SMC_Create(&handle);
+
+SpssConfig config{};
+SMC_GetDefaultConfig(&config);
+
+// UI 또는 LabVIEW에서 config.bev / config.alignment / config.noise / config.candidate 수정
+SMC_SetConfig(handle, &config);
+
+// frame 처리: 결과는 DLL 내부 last result에 저장됨
+SMC_ProcessFrame(handle, points, pointCount);
+
+SpssBevMapInfo mapInfo{};
+SMC_GetLastBevMapInfo(handle, &mapInfo);
+
+SpssAnalysisInfo analysis{};
+SMC_GetLastAnalysisInfo(handle, &analysis);
+
+std::vector&lt;SpssBevCell&gt; cells(mapInfo.requiredCellCount);
+std::int32_t writtenCellCount = 0;
+SMC_GetLastBevCells(
+    handle,
+    cells.data(),
+    static_cast&lt;std::int32_t&gt;(cells.size()),
+    &writtenCellCount);
+
+std::int32_t candidateCount = 0;
+SMC_GetLastCandidateRegions(handle, nullptr, 0, &candidateCount);
+
+std::vector&lt;SpssCandidateRegion&gt; candidates(candidateCount);
+SMC_GetLastCandidateRegions(
+    handle,
+    candidates.data(),
+    candidateCount,
+    &candidateCount);
+
+SMC_Destroy(handle);</code></pre>
+    </section>
+
+    <!-- 7 -->
+    <section class="section" id="sec-7">
+      <h2><span class="num">7</span> LidarInspector 연결 방식</h2>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:46%">위치</th>
+            <th>역할</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="file">90. UI/LidarInspector/LidarInspector.Analysis/Modules/SpssMapCore/SpssMapCoreAdapter.cs</td>
+            <td>DLL load, API version 확인, config 변환, frame 처리, GetLast 결과 복사, UI contract 변환을 담당합니다.</td>
+          </tr>
+          <tr>
+            <td class="file">90. UI/LidarInspector/LidarInspector.Analysis/Modules/SpssMapCore/SpssMapCoreSettings.cs</td>
+            <td>UI에서 저장/복원되는 SPSS 설정값입니다. 마지막 config 기억 기능도 이 설정 JSON을 기준으로 동작합니다.</td>
+          </tr>
+          <tr>
+            <td class="file">90. UI/LidarInspector/LidarInspector.App/ViewModels/Analysis/AnalysisPanelViewModel.cs</td>
+            <td>BEV image rendering, 후보 사각형 drawing, hover debug text, 설정 UI 표시를 담당합니다.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note">
+        현재 UI는 검증용 화면입니다. 계산 책임은 DLL로 이동했고, UI는 결과를 표시하고 config를 바꿔가며 튜닝하는 역할로 남기는 방향이 맞습니다.
+      </div>
+    </section>
+
+    <!-- 8 -->
+    <section class="section" id="sec-8">
+      <h2><span class="num">8</span> 제거된 API와 이유</h2>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:34%">제거된 API</th>
+            <th>제거 이유</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>SMC_SetDefaultBevConfig</code></td>
+            <td>handle 없이 BEV 기본값만 다루는 단발성 API라 engine 중심 구조와 맞지 않습니다. 현재는 <code>SMC_GetDefaultConfig</code>가 전체 기본 설정을 제공합니다.</td>
+          </tr>
+          <tr>
+            <td><code>SMC_BuildBevMap</code></td>
+            <td>고정 기본값으로 BEV만 생성하던 초기 API입니다. 현재는 <code>SMC_ProcessFrame</code>이 전체 전처리/BEV/후보 검출을 수행합니다.</td>
+          </tr>
+          <tr>
+            <td><code>SMC_BuildBevMapWithConfig</code></td>
+            <td>호출마다 config를 직접 넘기는 구조였습니다. 현재는 <code>SMC_SetConfig</code>로 engine에 설정을 저장한 뒤 frame을 처리합니다.</td>
+          </tr>
+          <tr>
+            <td><code>SMC_ProcessFrameWithCandidates</code></td>
+            <td>처리와 결과 복사를 동시에 하면서 인자가 길어졌습니다. v11부터는 <code>SMC_ProcessFrame</code> 처리 후 <code>SMC_GetLast...</code>로 가져옵니다.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 9 -->
+    <section class="section" id="sec-9">
+      <h2><span class="num">9</span> 다음 단계 메모</h2>
+      <ul>
+        <li>후보 사각형 안에서 원본 3D PCD 기준 정밀 길이/높이/틈/장애물 분석 구조 추가</li>
+        <li><code>SpssCandidateRegion</code>에 3D 분석 결과 struct를 연결할지 별도 result struct를 만들지 결정</li>
+        <li>frame 단위 결과를 누적해 SPSS/ARMG 지도화로 확장하는 단계는 별도 모듈 또는 상위 engine에서 다루는 편이 좋음</li>
+        <li>LabVIEW에서 사용할 경우 <code>Process → GetLast</code> 호출 순서를 예제 코드로 별도 문서화하면 좋음</li>
+      </ul>
+    </section>
+
+  </main>
+</div>
+</body>
+</html>

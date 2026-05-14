@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPSS Map Core DLL 동작 흐름 도식</title>
+<style>
+  :root {
+    --ink:#111827;
+    --ink-soft:#374151;
+    --muted:#64748b;
+    --line:#e2e8f0;
+    --line-soft:#eef2f7;
+    --panel:#ffffff;
+    --soft:#f5f8fc;
+    --soft-2:#eef3f9;
+    --blue:#2563eb;
+    --blue-soft:#dbeafe;
+    --blue-deep:#1e40af;
+    --cyan:#0e9fb8;
+    --cyan-soft:#cffafe;
+    --green:#059669;
+    --green-soft:#d1fae5;
+    --amber:#b45309;
+    --amber-soft:#fef3c7;
+    --red:#dc2626;
+    --red-soft:#fee2e2;
+    --purple:#7c3aed;
+    --purple-soft:#ede9fe;
+    --gray:#6b7280;
+    --gray-soft:#f1f5f9;
+    --code-bg:#0f172a;
+    --code-ink:#e2e8f0;
+    --mono:"JetBrains Mono","Cascadia Mono",Consolas,monospace;
+    --sans:"Segoe UI","Malgun Gothic","Noto Sans KR",Arial,sans-serif;
+  }
+
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+
+  body {
+    margin:0;
+    color:var(--ink);
+    background:var(--soft-2);
+    font-family:var(--sans);
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .layout {
+    display:grid;
+    grid-template-columns:240px minmax(0, 1fr);
+    gap:32px;
+    width:min(1320px, calc(100% - 48px));
+    margin:0 auto;
+    padding:32px 0 64px;
+  }
+
+  /* ── Sidebar TOC ─────────────────────────── */
+  aside {
+    position:sticky;
+    top:24px;
+    align-self:start;
+    max-height:calc(100vh - 48px);
+    overflow-y:auto;
+    padding:18px 16px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:var(--panel);
+    font-size:13.5px;
+  }
+
+  aside .toc-title {
+    margin:0 0 12px;
+    padding:0 4px 10px;
+    border-bottom:1px solid var(--line-soft);
+    color:var(--muted);
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+  }
+
+  aside ol {
+    margin:0;
+    padding:0;
+    list-style:none;
+    counter-reset:toc;
+  }
+
+  aside ol li { counter-increment:toc; margin:0; }
+
+  aside ol li a {
+    display:flex;
+    gap:10px;
+    align-items:baseline;
+    padding:7px 8px;
+    border-radius:6px;
+    color:var(--ink-soft);
+    text-decoration:none;
+    transition:background .15s, color .15s;
+  }
+
+  aside ol li a::before {
+    content:counter(toc, decimal-leading-zero);
+    flex:none;
+    color:var(--muted);
+    font-family:var(--mono);
+    font-size:11px;
+    font-weight:700;
+  }
+
+  aside ol li a:hover { color:var(--blue); background:var(--soft); }
+
+  /* ── Header ──────────────────────────────── */
+  header {
+    padding:32px 36px;
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:linear-gradient(135deg, #ffffff 0%, #eaf2ff 100%);
+  }
+
+  h1 {
+    margin:0 0 12px;
+    font-size:30px;
+    line-height:1.25;
+    letter-spacing:-0.01em;
+  }
+
+  h2 {
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin:0 0 22px;
+    padding-bottom:14px;
+    border-bottom:1px solid var(--line-soft);
+    font-size:21px;
+    letter-spacing:-0.01em;
+  }
+
+  h2 .num {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:30px;
+    height:30px;
+    border-radius:8px;
+    background:var(--blue);
+    color:#fff;
+    font-family:var(--mono);
+    font-size:14px;
+    font-weight:700;
+  }
+
+  h3 {
+    margin:24px 0 12px;
+    font-size:15.5px;
+    font-weight:700;
+    color:var(--ink);
+  }
+
+  h3:first-child { margin-top:0; }
+
+  p {
+    margin:0 0 12px;
+    color:var(--ink-soft);
+  }
+
+  .lead {
+    max-width:880px;
+    margin:0;
+    color:var(--muted);
+    font-size:15px;
+    line-height:1.7;
+  }
+
+  code {
+    padding:1.5px 6px;
+    border-radius:4px;
+    background:var(--gray-soft);
+    color:var(--ink);
+    font-family:var(--mono);
+    font-size:0.88em;
+  }
+
+  pre {
+    margin:14px 0 0;
+    padding:16px 18px;
+    overflow:auto;
+    border-radius:10px;
+    background:var(--code-bg);
+    color:var(--code-ink);
+    font-family:var(--mono);
+    font-size:12.5px;
+    line-height:1.65;
+  }
+
+  pre code {
+    padding:0;
+    background:transparent;
+    color:inherit;
+    font-size:inherit;
+  }
+
+  section.section {
+    margin-top:24px;
+    padding:28px 32px;
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:var(--panel);
+    scroll-margin-top:20px;
+  }
+
+  /* ── Pills ───────────────────────────────── */
+  .meta {
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:20px;
+  }
+
+  .pill {
+    display:inline-flex;
+    align-items:center;
+    height:26px;
+    padding:0 12px;
+    border-radius:999px;
+    background:var(--gray-soft);
+    color:var(--ink-soft);
+    font-family:var(--mono);
+    font-size:11.5px;
+    font-weight:600;
+  }
+
+  .pill.hot { background:var(--blue-soft); color:var(--blue); }
+  .pill.green { background:var(--green-soft); color:var(--green); }
+
+  /* ── Diagram container ───────────────────── */
+  .diagram {
+    margin:18px 0 6px;
+    padding:24px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:var(--soft);
+    overflow-x:auto;
+  }
+
+  .diagram-caption {
+    margin-top:8px;
+    color:var(--muted);
+    font-size:12.5px;
+    text-align:center;
+  }
+
+  svg { display:block; margin:0 auto; max-width:100%; height:auto; }
+
+  /* ── Cards ───────────────────────────────── */
+  .grid {
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:16px;
+  }
+
+  .cards-3 {
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:16px;
+  }
+
+  .card {
+    padding:20px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:var(--soft);
+  }
+
+  .card.accent-blue   { border-left:4px solid var(--blue);   }
+  .card.accent-green  { border-left:4px solid var(--green);  }
+  .card.accent-amber  { border-left:4px solid var(--amber);  }
+  .card.accent-red    { border-left:4px solid var(--red);    }
+  .card.accent-purple { border-left:4px solid var(--purple); }
+
+  /* ── Tables ──────────────────────────────── */
+  table {
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    overflow:hidden;
+    border:1px solid var(--line);
+    border-radius:10px;
+  }
+
+  th, td {
+    padding:13px 16px;
+    border-bottom:1px solid var(--line-soft);
+    vertical-align:top;
+    text-align:left;
+  }
+
+  th {
+    background:var(--soft);
+    color:var(--ink);
+    font-size:12.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+  }
+
+  td { color:var(--ink-soft); font-size:14px; }
+  tbody tr:hover { background:var(--soft); }
+  tbody tr:last-child td { border-bottom:0; }
+
+  /* ── Step list (pipeline) ────────────────── */
+  .steps {
+    display:grid;
+    grid-template-columns:1fr;
+    gap:0;
+    margin-top:18px;
+  }
+
+  .step-row {
+    display:grid;
+    grid-template-columns:60px 1fr;
+    gap:18px;
+    padding:18px 0;
+    border-bottom:1px solid var(--line-soft);
+  }
+
+  .step-row:last-child { border-bottom:0; }
+
+  .step-num {
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+  }
+
+  .step-num span {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:44px;
+    height:44px;
+    border-radius:50%;
+    background:var(--blue);
+    color:#fff;
+    font-family:var(--mono);
+    font-size:18px;
+    font-weight:700;
+  }
+
+  .step-body h3 { margin:0 0 6px; }
+
+  .step-body p {
+    margin:0 0 8px;
+    font-size:14px;
+  }
+
+  /* ── Note box ────────────────────────────── */
+  .note {
+    margin-top:18px;
+    padding:14px 18px;
+    border-left:4px solid var(--amber);
+    border-radius:6px;
+    background:var(--amber-soft);
+    color:#7c4a03;
+    font-size:14px;
+  }
+
+  .note.info {
+    border-left-color:var(--blue);
+    background:var(--blue-soft);
+    color:#1e3a8a;
+  }
+
+  /* ── KV pair ─────────────────────────────── */
+  .kv {
+    display:grid;
+    grid-template-columns:140px 1fr;
+    gap:8px 16px;
+    margin:10px 0 0;
+    padding:14px 16px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:var(--panel);
+    font-size:13.5px;
+  }
+
+  .kv dt {
+    color:var(--muted);
+    font-family:var(--mono);
+    font-size:12px;
+  }
+
+  .kv dd {
+    margin:0;
+    color:var(--ink-soft);
+  }
+
+  ul { margin:8px 0 0; padding-left:20px; }
+  li { margin:5px 0; color:var(--ink-soft); }
+
+  /* ── Status badges ───────────────────────── */
+  .badge {
+    display:inline-block;
+    padding:2px 8px;
+    border-radius:6px;
+    font-family:var(--mono);
+    font-size:11.5px;
+    font-weight:700;
+  }
+  .badge.ok    { background:var(--green-soft); color:var(--green); }
+  .badge.err   { background:var(--red-soft);   color:var(--red);   }
+  .badge.warn  { background:var(--amber-soft); color:var(--amber); }
+  .badge.info  { background:var(--blue-soft);  color:var(--blue);  }
+
+  /* ── Responsive ──────────────────────────── */
+  @media (max-width:1024px) {
+    .layout { grid-template-columns:1fr; }
+    aside { position:static; max-height:none; }
+  }
+
+  @media (max-width:760px) {
+    .grid, .cards-3 { grid-template-columns:1fr; }
+    section.section { padding:22px 20px; }
+    header { padding:24px 22px; }
+    h1 { font-size:24px; }
+    th, td { display:block; width:100%; }
+    th { border-bottom:0; }
+    .step-row { grid-template-columns:50px 1fr; gap:12px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ───────── Sidebar TOC ───────── -->
+  <aside>
+    <div class="toc-title">목차</div>
+    <ol>
+      <li><a href="#sec-1">시스템 개요</a></li>
+      <li><a href="#sec-2">전체 동작 흐름</a></li>
+      <li><a href="#sec-3">ProcessFrame 파이프라인</a></li>
+      <li><a href="#sec-4">좌표 변환 상세</a></li>
+      <li><a href="#sec-5">BEV 격자 누적</a></li>
+      <li><a href="#sec-6">후보 검출 알고리즘</a></li>
+      <li><a href="#sec-7">데이터 구조 관계</a></li>
+      <li><a href="#sec-8">호출 시퀀스</a></li>
+      <li><a href="#sec-9">상태 코드와 안전성</a></li>
+    </ol>
+  </aside>
+
+  <!-- ───────── Main ───────── -->
+  <main>
+    <header>
+      <h1>SPSS Map Core DLL 동작 흐름 도식</h1>
+      <p class="lead">
+        <code>01. port/LabViewLidar/SpssMapCore</code> DLL의 내부 동작을 단계별 다이어그램으로 정리한 문서입니다.
+        LiDAR 점 데이터가 어떻게 BEV 지도와 후보 박스로 변환되는지, handle 기반 lifecycle은 어떻게 흘러가는지 시각적으로 추적할 수 있습니다.
+      </p>
+      <div class="meta">
+        <span class="pill hot">API v11</span>
+        <span class="pill">SpssMapCore.cpp 1653 lines</span>
+        <span class="pill green">Process → GetLast</span>
+        <span class="pill">2026-05-14</span>
+      </div>
+    </header>
+
+    <!-- 1 시스템 개요 -->
+    <section class="section" id="sec-1">
+      <h2><span class="num">1</span> 시스템 개요</h2>
+      <p>
+        SpssMapCore는 LiDAR 점군(PCD) 한 프레임을 받아 <strong>BEV(Bird's-Eye-View) 격자 지도</strong>와 <strong>후보 박스 영역</strong>을 생성하는 Windows DLL입니다.
+        C ABI로 노출되어 LabVIEW와 C# UI(P/Invoke)에서 동일하게 호출할 수 있습니다.
+      </p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg">
+          <!-- Caller layer -->
+          <rect x="40" y="30" width="800" height="78" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+          <text x="440" y="58" text-anchor="middle" font-size="14" font-weight="700" fill="#1e40af" font-family="Segoe UI">호출자 (Caller)</text>
+          <rect x="80"  y="68" width="220" height="30" rx="6" fill="#fff" stroke="#2563eb"/>
+          <text x="190" y="88" text-anchor="middle" font-size="13" fill="#1e3a8a" font-family="JetBrains Mono">LabVIEW VI</text>
+          <rect x="330" y="68" width="220" height="30" rx="6" fill="#fff" stroke="#2563eb"/>
+          <text x="440" y="88" text-anchor="middle" font-size="13" fill="#1e3a8a" font-family="JetBrains Mono">C# UI (LidarInspector)</text>
+          <rect x="580" y="68" width="220" height="30" rx="6" fill="#fff" stroke="#2563eb"/>
+          <text x="690" y="88" text-anchor="middle" font-size="13" fill="#1e3a8a" font-family="JetBrains Mono">기타 P/Invoke</text>
+
+          <!-- Arrow down -->
+          <line x1="440" y1="115" x2="440" y2="148" stroke="#64748b" stroke-width="2"/>
+          <polygon points="440,155 434,143 446,143" fill="#64748b"/>
+          <text x="460" y="138" font-size="12" fill="#64748b" font-family="JetBrains Mono">C ABI (__stdcall)</text>
+
+          <!-- DLL layer -->
+          <rect x="40" y="160" width="800" height="170" rx="10" fill="#ecfeff" stroke="#0e9fb8" stroke-width="1.5"/>
+          <text x="440" y="186" text-anchor="middle" font-size="14" font-weight="700" fill="#0c7e94" font-family="Segoe UI">SpssMapCore.dll</text>
+
+          <!-- Engine box -->
+          <rect x="80" y="200" width="280" height="110" rx="8" fill="#fff" stroke="#0e9fb8"/>
+          <text x="220" y="220" text-anchor="middle" font-size="13" font-weight="700" fill="#0c7e94" font-family="Segoe UI">SpssEngine (handle)</text>
+          <line x1="100" y1="230" x2="340" y2="230" stroke="#cffafe"/>
+          <text x="100" y="250" font-size="12" fill="#374151" font-family="JetBrains Mono">magic = "SPSS"</text>
+          <text x="100" y="268" font-size="12" fill="#374151" font-family="JetBrains Mono">config (BEV/cand/align/noise)</text>
+          <text x="100" y="286" font-size="12" fill="#374151" font-family="JetBrains Mono">lastMapInfo / lastAnalysisInfo</text>
+          <text x="100" y="304" font-size="12" fill="#374151" font-family="JetBrains Mono">lastCells[] / lastCandidates[]</text>
+
+          <!-- API box -->
+          <rect x="400" y="200" width="400" height="110" rx="8" fill="#fff" stroke="#0e9fb8"/>
+          <text x="600" y="220" text-anchor="middle" font-size="13" font-weight="700" fill="#0c7e94" font-family="Segoe UI">공개 API 11개</text>
+          <line x1="420" y1="230" x2="780" y2="230" stroke="#cffafe"/>
+          <text x="420" y="250" font-size="12" fill="#374151" font-family="JetBrains Mono">Create / Destroy / Get/SetConfig</text>
+          <text x="420" y="268" font-size="12" fill="#374151" font-family="JetBrains Mono">ProcessFrame (처리만)</text>
+          <text x="420" y="286" font-size="12" fill="#374151" font-family="JetBrains Mono">GetLastBevMapInfo / AnalysisInfo</text>
+          <text x="420" y="304" font-size="12" fill="#374151" font-family="JetBrains Mono">GetLastBevCells / CandidateRegions</text>
+        </svg>
+        <div class="diagram-caption">호출자 ↔ DLL 구조 — Engine은 handle 뒤에 숨고, 결과는 모두 내부에 보관</div>
+      </div>
+
+      <div class="grid">
+        <div class="card accent-blue">
+          <h3>입력</h3>
+          <p>원본 LiDAR 점 배열 <code>SpssPoint[]</code> (x, y, z meter + reflectivity)</p>
+        </div>
+        <div class="card accent-green">
+          <h3>출력</h3>
+          <p>BEV cell 격자 + 후보 사각형 박스 + 프레임 요약 (모두 engine 내부 last result)</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 전체 동작 흐름 -->
+    <section class="section" id="sec-2">
+      <h2><span class="num">2</span> 전체 동작 흐름 (Lifecycle)</h2>
+      <p>
+        handle 생성부터 해제까지 표준 호출 순서입니다.
+        <code>SetConfig</code>는 호출 직후 이전 결과를 무효화하고,
+        <code>ProcessFrame</code>은 결과를 내부에만 저장합니다 — 호출자는 <code>GetLast*</code>로 필요한 만큼만 꺼냅니다.
+      </p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 940 280" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+            </marker>
+          </defs>
+
+          <!-- Step 1 Create -->
+          <rect x="20"  y="60" width="140" height="70" rx="10" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+          <text x="90" y="86"  text-anchor="middle" font-size="12" font-weight="700" fill="#065f46" font-family="JetBrains Mono">SMC_Create</text>
+          <text x="90" y="106" text-anchor="middle" font-size="11" fill="#065f46">handle 생성</text>
+          <text x="90" y="120" text-anchor="middle" font-size="11" fill="#065f46">기본 config 적용</text>
+
+          <line x1="160" y1="95" x2="195" y2="95" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Step 2 SetConfig -->
+          <rect x="200" y="60" width="140" height="70" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+          <text x="270" y="86"  text-anchor="middle" font-size="12" font-weight="700" fill="#1e40af" font-family="JetBrains Mono">SMC_SetConfig</text>
+          <text x="270" y="106" text-anchor="middle" font-size="11" fill="#1e3a8a">설정 검증</text>
+          <text x="270" y="120" text-anchor="middle" font-size="11" fill="#1e3a8a">이전 결과 clear</text>
+
+          <line x1="340" y1="95" x2="375" y2="95" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Step 3 ProcessFrame -->
+          <rect x="380" y="60" width="160" height="70" rx="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+          <text x="460" y="86"  text-anchor="middle" font-size="12" font-weight="700" fill="#5b21b6" font-family="JetBrains Mono">SMC_ProcessFrame</text>
+          <text x="460" y="106" text-anchor="middle" font-size="11" fill="#5b21b6">필터 → 변환 → BEV</text>
+          <text x="460" y="120" text-anchor="middle" font-size="11" fill="#5b21b6">→ 후보 검출 (5단계)</text>
+
+          <line x1="540" y1="95" x2="575" y2="95" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Step 4 GetLast group -->
+          <rect x="580" y="30" width="180" height="130" rx="10" fill="#fef3c7" stroke="#b45309" stroke-width="1.5"/>
+          <text x="670" y="52" text-anchor="middle" font-size="12" font-weight="700" fill="#7c4a03" font-family="JetBrains Mono">SMC_GetLast*</text>
+          <line x1="600" y1="62" x2="740" y2="62" stroke="#fde68a"/>
+          <text x="600" y="80"  font-size="11" fill="#7c4a03" font-family="JetBrains Mono">BevMapInfo</text>
+          <text x="600" y="98"  font-size="11" fill="#7c4a03" font-family="JetBrains Mono">AnalysisInfo</text>
+          <text x="600" y="116" font-size="11" fill="#7c4a03" font-family="JetBrains Mono">BevCells</text>
+          <text x="600" y="134" font-size="11" fill="#7c4a03" font-family="JetBrains Mono">CandidateRegions</text>
+          <text x="600" y="152" font-size="10" fill="#a16207">→ 호출자 버퍼에 복사</text>
+
+          <line x1="760" y1="95" x2="795" y2="95" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Step 5 Destroy -->
+          <rect x="800" y="60" width="120" height="70" rx="10" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+          <text x="860" y="86"  text-anchor="middle" font-size="12" font-weight="700" fill="#991b1b" font-family="JetBrains Mono">SMC_Destroy</text>
+          <text x="860" y="106" text-anchor="middle" font-size="11" fill="#991b1b">magic 무효화</text>
+          <text x="860" y="120" text-anchor="middle" font-size="11" fill="#991b1b">메모리 해제</text>
+
+          <!-- Loop back from ProcessFrame to ProcessFrame -->
+          <path d="M 460 130 Q 460 220 270 220 L 270 200" fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+          <text x="365" y="240" text-anchor="middle" font-size="11" fill="#7c3aed" font-style="italic">다음 frame 처리 시 반복 (이전 결과 덮어씀)</text>
+
+          <!-- Optional SetConfig loop -->
+          <path d="M 270 60 Q 270 20 270 20" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <text x="270" y="14" text-anchor="middle" font-size="10" fill="#2563eb">설정 변경 시</text>
+        </svg>
+        <div class="diagram-caption">표준 lifecycle — 점선은 반복 호출 경로</div>
+      </div>
+
+      <div class="note info">
+        <strong>핵심 원칙:</strong>
+        <code>ProcessFrame</code>은 결과를 반환하지 않습니다. 모든 결과는 engine 내부 last result 버퍼에 저장되고,
+        호출자는 필요한 결과만 <code>GetLast*</code>로 가져갑니다. 이 분리 덕분에 함수 시그니처가 단순해지고
+        호출자가 한 번에 받을 결과의 종류·크기를 선택할 수 있습니다.
+      </div>
+    </section>
+
+    <!-- 3 ProcessFrame 파이프라인 -->
+    <section class="section" id="sec-3">
+      <h2><span class="num">3</span> ProcessFrame 5단계 파이프라인</h2>
+      <p>입력 점 배열이 BEV 격자와 후보 박스로 변환되는 내부 처리 과정입니다.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 940 460" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/>
+            </marker>
+          </defs>
+
+          <!-- Input -->
+          <rect x="350" y="10" width="240" height="50" rx="8" fill="#fff" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <text x="470" y="32" text-anchor="middle" font-size="13" font-weight="700" fill="#374151" font-family="Segoe UI">입력</text>
+          <text x="470" y="50" text-anchor="middle" font-size="11" fill="#64748b" font-family="JetBrains Mono">SpssPoint[] (x, y, z, refl)</text>
+          <line x1="470" y1="60" x2="470" y2="78" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow2)"/>
+
+          <!-- Step 1: Point Noise Filter -->
+          <rect x="280" y="84" width="380" height="50" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+          <circle cx="306" cy="109" r="14" fill="#2563eb"/>
+          <text x="306" y="114" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="JetBrains Mono">1</text>
+          <text x="335" y="105" font-size="13" font-weight="700" fill="#1e40af" font-family="Segoe UI">점 단위 noise filter</text>
+          <text x="335" y="124" font-size="11" fill="#1e3a8a">reflectivity &lt; minReflectivity 인 점 버림</text>
+          <line x1="470" y1="134" x2="470" y2="150" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow2)"/>
+
+          <!-- Step 2: Coordinate Transform -->
+          <rect x="280" y="156" width="380" height="50" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+          <circle cx="306" cy="181" r="14" fill="#2563eb"/>
+          <text x="306" y="186" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="JetBrains Mono">2</text>
+          <text x="335" y="177" font-size="13" font-weight="700" fill="#1e40af" font-family="Segoe UI">좌표 변환 (회전 → 투영 → flip)</text>
+          <text x="335" y="196" font-size="11" fill="#1e3a8a">Roll → Pitch → Yaw, projection plane, flipX/Y</text>
+          <line x1="470" y1="206" x2="470" y2="222" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow2)"/>
+
+          <!-- Step 3: BEV Accumulation -->
+          <rect x="280" y="228" width="380" height="50" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+          <circle cx="306" cy="253" r="14" fill="#2563eb"/>
+          <text x="306" y="258" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="JetBrains Mono">3</text>
+          <text x="335" y="249" font-size="13" font-weight="700" fill="#1e40af" font-family="Segoe UI">BEV 격자 누적</text>
+          <text x="335" y="268" font-size="11" fill="#1e3a8a">ROI 안의 점만 cell[y*w + x]에 height/refl 누적</text>
+          <line x1="470" y1="278" x2="470" y2="294" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow2)"/>
+
+          <!-- Step 4: Cell Noise Filter -->
+          <rect x="280" y="300" width="380" height="50" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+          <circle cx="306" cy="325" r="14" fill="#2563eb"/>
+          <text x="306" y="330" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="JetBrains Mono">4</text>
+          <text x="335" y="321" font-size="13" font-weight="700" fill="#1e40af" font-family="Segoe UI">셀 단위 noise filter</text>
+          <text x="335" y="340" font-size="11" fill="#1e3a8a">pointCount &lt; minCellPointCount 인 셀 초기화</text>
+          <line x1="470" y1="350" x2="470" y2="366" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow2)"/>
+
+          <!-- Step 5: Candidate Detection -->
+          <rect x="280" y="372" width="380" height="50" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+          <circle cx="306" cy="397" r="14" fill="#2563eb"/>
+          <text x="306" y="402" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="JetBrains Mono">5</text>
+          <text x="335" y="393" font-size="13" font-weight="700" fill="#1e40af" font-family="Segoe UI">후보 박스 검출</text>
+          <text x="335" y="412" font-size="11" fill="#1e3a8a">coarse grid → density mask → BFS → sort</text>
+
+          <!-- Side outputs -->
+          <rect x="700" y="156" width="220" height="50" rx="8" fill="#fef3c7" stroke="#b45309"/>
+          <text x="710" y="178" font-size="11" font-weight="700" fill="#7c4a03" font-family="JetBrains Mono">transformedPoints[]</text>
+          <text x="710" y="195" font-size="10" fill="#a16207">(임시, 다음 단계로만 전달)</text>
+          <line x1="660" y1="180" x2="698" y2="180" stroke="#b45309" stroke-width="1.5" stroke-dasharray="3,3"/>
+
+          <rect x="700" y="228" width="220" height="50" rx="8" fill="#d1fae5" stroke="#059669"/>
+          <text x="710" y="250" font-size="11" font-weight="700" fill="#065f46" font-family="JetBrains Mono">lastCells[]</text>
+          <text x="710" y="267" font-size="10" fill="#047857">→ engine 저장</text>
+          <line x1="660" y1="252" x2="698" y2="252" stroke="#059669" stroke-width="1.5"/>
+
+          <rect x="700" y="372" width="220" height="50" rx="8" fill="#d1fae5" stroke="#059669"/>
+          <text x="710" y="394" font-size="11" font-weight="700" fill="#065f46" font-family="JetBrains Mono">lastCandidates[]</text>
+          <text x="710" y="411" font-size="10" fill="#047857">→ engine 저장</text>
+          <line x1="660" y1="396" x2="698" y2="396" stroke="#059669" stroke-width="1.5"/>
+
+          <!-- Analysis info side branch -->
+          <rect x="20" y="228" width="220" height="50" rx="8" fill="#d1fae5" stroke="#059669"/>
+          <text x="30" y="250" font-size="11" font-weight="700" fill="#065f46" font-family="JetBrains Mono">lastAnalysisInfo</text>
+          <text x="30" y="267" font-size="10" fill="#047857">입력/ROI/cell/후보 요약</text>
+          <line x1="240" y1="252" x2="278" y2="252" stroke="#059669" stroke-width="1.5"/>
+
+          <rect x="20" y="300" width="220" height="50" rx="8" fill="#d1fae5" stroke="#059669"/>
+          <text x="30" y="322" font-size="11" font-weight="700" fill="#065f46" font-family="JetBrains Mono">lastMapInfo</text>
+          <text x="30" y="339" font-size="10" fill="#047857">width × height × cellCount</text>
+          <line x1="240" y1="324" x2="278" y2="324" stroke="#059669" stroke-width="1.5"/>
+        </svg>
+        <div class="diagram-caption">파란 단계는 순차 처리, 좌/우 분기는 결과 저장 위치</div>
+      </div>
+
+      <div class="steps">
+        <div class="step-row">
+          <div class="step-num"><span>1</span></div>
+          <div class="step-body">
+            <h3>점 단위 noise filter</h3>
+            <p>
+              <code>enableNoiseFilter == 1</code>이면 <code>reflectivity &lt; minReflectivity</code>인 점을 버립니다.
+              필터가 꺼져 있으면 호환성을 위해 reflectivity 값과 무관하게 통과시킵니다.
+              NaN/Inf reflectivity는 필터 ON 상태에서만 버립니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-row">
+          <div class="step-num"><span>2</span></div>
+          <div class="step-body">
+            <h3>좌표 변환</h3>
+            <p>
+              alignment 설정에 따라 <strong>Roll(X) → Pitch(Y) → Yaw(Z)</strong> 순서로 회전한 뒤,
+              projection plane(TOP_XY / FRONT_YZ / SIDE_XZ)을 선택해 축을 재배치하고,
+              마지막에 flipX/flipY를 적용합니다. UI(C#)에서 검증한 회전 순서와 동일하게 유지됩니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-row">
+          <div class="step-num"><span>3</span></div>
+          <div class="step-body">
+            <h3>BEV 격자 누적</h3>
+            <p>
+              ROI <code>[minX, maxX) × [minY, maxY) × [minZ, maxZ)</code> 안의 점만 <code>cellX = (x - minX) / grid</code>로 인덱스를 계산해 해당 셀에 추가합니다.
+              각 셀은 maxHeight, minHeight, heightSum, reflectivitySum, pointCount를 누적합니다.
+              float 반올림으로 마지막 셀 밖 인덱스가 나오면 방어적으로 버립니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-row">
+          <div class="step-num"><span>4</span></div>
+          <div class="step-body">
+            <h3>셀 단위 noise filter</h3>
+            <p>
+              <code>pointCount &lt; minCellPointCount</code>인 셀을 통째로 초기화합니다.
+              점은 많지만 격자 한 칸에 모이지 못한 산발성 노이즈를 제거하는 효과가 있습니다.
+              필터가 꺼져 있거나 임계값이 1 이하면 건너뜁니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-row">
+          <div class="step-num"><span>5</span></div>
+          <div class="step-body">
+            <h3>후보 박스 검출</h3>
+            <p>
+              fine BEV를 coarse grid로 다운샘플 → local density mask로 작은 틈 메우기 → BFS 4-방향 연결(깊이 차이로 끊기) → minRegionCells 이상만 채택 → 크기 순 정렬 후 maxCandidateCount만 보존.
+              자세한 흐름은 <a href="#sec-6">섹션 6</a>에 있습니다.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 좌표 변환 상세 -->
+    <section class="section" id="sec-4">
+      <h2><span class="num">4</span> 좌표 변환 상세</h2>
+      <p>
+        원본 LiDAR meter 좌표를 BEV 누적용 좌표로 바꾸는 3단계입니다.
+        단계 순서를 바꾸면 UI 검증 결과와 달라지므로 X → Y → Z 회전, 그 다음 투영, 마지막 flip 순으로 고정되어 있습니다.
+      </p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 900 280" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#7c3aed"/>
+            </marker>
+          </defs>
+
+          <!-- Stage A: rotation -->
+          <rect x="20" y="40" width="260" height="200" rx="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+          <text x="150" y="64" text-anchor="middle" font-size="13" font-weight="700" fill="#5b21b6" font-family="Segoe UI">① 회전 (Rotation)</text>
+
+          <rect x="40" y="78" width="220" height="42" rx="6" fill="#fff" stroke="#a78bfa"/>
+          <text x="60" y="96" font-size="11" font-weight="700" fill="#5b21b6" font-family="JetBrains Mono">RotateAroundX</text>
+          <text x="60" y="112" font-size="11" fill="#5b21b6">roll (X축)</text>
+
+          <rect x="40" y="128" width="220" height="42" rx="6" fill="#fff" stroke="#a78bfa"/>
+          <text x="60" y="146" font-size="11" font-weight="700" fill="#5b21b6" font-family="JetBrains Mono">RotateAroundY</text>
+          <text x="60" y="162" font-size="11" fill="#5b21b6">pitch (Y축)</text>
+
+          <rect x="40" y="178" width="220" height="42" rx="6" fill="#fff" stroke="#a78bfa"/>
+          <text x="60" y="196" font-size="11" font-weight="700" fill="#5b21b6" font-family="JetBrains Mono">RotateAroundZ</text>
+          <text x="60" y="212" font-size="11" fill="#5b21b6">yaw (Z축)</text>
+
+          <line x1="280" y1="140" x2="318" y2="140" stroke="#7c3aed" stroke-width="2" marker-end="url(#arrow3)"/>
+
+          <!-- Stage B: projection -->
+          <rect x="320" y="40" width="260" height="200" rx="10" fill="#cffafe" stroke="#0e9fb8" stroke-width="1.5"/>
+          <text x="450" y="64" text-anchor="middle" font-size="13" font-weight="700" fill="#0c7e94" font-family="Segoe UI">② 투영 (Projection)</text>
+
+          <rect x="340" y="78" width="220" height="42" rx="6" fill="#fff" stroke="#67e8f9"/>
+          <text x="360" y="96" font-size="11" font-weight="700" fill="#0c7e94" font-family="JetBrains Mono">TOP_XY</text>
+          <text x="360" y="112" font-size="11" fill="#0c7e94">(x, y, z) 그대로</text>
+
+          <rect x="340" y="128" width="220" height="42" rx="6" fill="#fff" stroke="#67e8f9"/>
+          <text x="360" y="146" font-size="11" font-weight="700" fill="#0c7e94" font-family="JetBrains Mono">FRONT_YZ</text>
+          <text x="360" y="162" font-size="11" fill="#0c7e94">(y, z, x) — x가 height</text>
+
+          <rect x="340" y="178" width="220" height="42" rx="6" fill="#fff" stroke="#67e8f9"/>
+          <text x="360" y="196" font-size="11" font-weight="700" fill="#0c7e94" font-family="JetBrains Mono">SIDE_XZ</text>
+          <text x="360" y="212" font-size="11" fill="#0c7e94">(x, z, y) — y가 height</text>
+
+          <line x1="580" y1="140" x2="618" y2="140" stroke="#7c3aed" stroke-width="2" marker-end="url(#arrow3)"/>
+
+          <!-- Stage C: flip -->
+          <rect x="620" y="40" width="260" height="200" rx="10" fill="#fef3c7" stroke="#b45309" stroke-width="1.5"/>
+          <text x="750" y="64" text-anchor="middle" font-size="13" font-weight="700" fill="#7c4a03" font-family="Segoe UI">③ Flip</text>
+
+          <rect x="640" y="100" width="220" height="42" rx="6" fill="#fff" stroke="#fcd34d"/>
+          <text x="660" y="118" font-size="11" font-weight="700" fill="#7c4a03" font-family="JetBrains Mono">if flipX != 0</text>
+          <text x="660" y="134" font-size="11" fill="#7c4a03">x = -x</text>
+
+          <rect x="640" y="150" width="220" height="42" rx="6" fill="#fff" stroke="#fcd34d"/>
+          <text x="660" y="168" font-size="11" font-weight="700" fill="#7c4a03" font-family="JetBrains Mono">if flipY != 0</text>
+          <text x="660" y="184" font-size="11" fill="#7c4a03">y = -y</text>
+
+          <text x="750" y="218" text-anchor="middle" font-size="11" fill="#a16207" font-style="italic">BEV 그리드 좌표 완성</text>
+        </svg>
+        <div class="diagram-caption">변환 순서: 회전 (X→Y→Z) → 투영면 선택 → flip — 이 순서가 UI 검증 결과와 일치</div>
+      </div>
+
+      <div class="note">
+        <strong>왜 double로 계산?</strong>
+        회전 함수 안에서 <code>cos/sin</code>은 모두 double로 계산한 뒤 float으로 캐스팅합니다.
+        UI(C# <code>Math.PI</code>) 검증 결과와 같은 값을 내기 위한 의도적 설계입니다.
+      </div>
+    </section>
+
+    <!-- 5 BEV 격자 누적 -->
+    <section class="section" id="sec-5">
+      <h2><span class="num">5</span> BEV 격자 누적 방식</h2>
+      <p>
+        BEV 격자는 <code>gridSizeMeters</code> 크기의 정사각 셀로 ROI를 덮습니다.
+        각 점은 자신이 속한 셀에 통계값으로 누적됩니다.
+      </p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg">
+          <!-- Grid -->
+          <g stroke="#cbd5e1" stroke-width="1">
+            <line x1="60" y1="30"  x2="60" y2="320"/>
+            <line x1="120" y1="30" x2="120" y2="320"/>
+            <line x1="180" y1="30" x2="180" y2="320"/>
+            <line x1="240" y1="30" x2="240" y2="320"/>
+            <line x1="300" y1="30" x2="300" y2="320"/>
+            <line x1="360" y1="30" x2="360" y2="320"/>
+            <line x1="420" y1="30" x2="420" y2="320"/>
+            <line x1="480" y1="30" x2="480" y2="320"/>
+
+            <line x1="60" y1="30"  x2="480" y2="30"/>
+            <line x1="60" y1="90"  x2="480" y2="90"/>
+            <line x1="60" y1="150" x2="480" y2="150"/>
+            <line x1="60" y1="210" x2="480" y2="210"/>
+            <line x1="60" y1="270" x2="480" y2="270"/>
+            <line x1="60" y1="320" x2="480" y2="320"/>
+          </g>
+
+          <!-- Highlighted cell -->
+          <rect x="180" y="150" width="60" height="60" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+          <text x="210" y="184" text-anchor="middle" font-size="11" font-weight="700" fill="#1e40af" font-family="JetBrains Mono">cell</text>
+          <text x="210" y="200" text-anchor="middle" font-size="10" fill="#1e3a8a" font-family="JetBrains Mono">[y][x]</text>
+
+          <!-- Points -->
+          <circle cx="195" cy="165" r="3" fill="#dc2626"/>
+          <circle cx="208" cy="172" r="3" fill="#dc2626"/>
+          <circle cx="220" cy="180" r="3" fill="#dc2626"/>
+          <circle cx="228" cy="195" r="3" fill="#dc2626"/>
+          <circle cx="200" cy="200" r="3" fill="#dc2626"/>
+          <circle cx="215" cy="190" r="3" fill="#dc2626"/>
+
+          <!-- Other points scattered -->
+          <circle cx="85"  cy="55"  r="3" fill="#9ca3af"/>
+          <circle cx="140" cy="120" r="3" fill="#9ca3af"/>
+          <circle cx="280" cy="240" r="3" fill="#9ca3af"/>
+          <circle cx="340" cy="80"  r="3" fill="#9ca3af"/>
+          <circle cx="395" cy="170" r="3" fill="#9ca3af"/>
+          <circle cx="440" cy="250" r="3" fill="#9ca3af"/>
+          <circle cx="135" cy="280" r="3" fill="#9ca3af"/>
+
+          <!-- Axis labels -->
+          <text x="60"  y="340" font-size="11" fill="#64748b" font-family="JetBrains Mono">minX</text>
+          <text x="465" y="340" font-size="11" fill="#64748b" font-family="JetBrains Mono">maxX</text>
+          <text x="20"  y="35" font-size="11" fill="#64748b" font-family="JetBrains Mono">minY</text>
+          <text x="20"  y="320" font-size="11" fill="#64748b" font-family="JetBrains Mono">maxY</text>
+
+          <!-- Index calc -->
+          <line x1="240" y1="180" x2="540" y2="180" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <polygon points="540,180 532,176 532,184" fill="#2563eb"/>
+
+          <!-- Right info panel -->
+          <rect x="550" y="40" width="310" height="280" rx="10" fill="#f5f8fc" stroke="#e2e8f0"/>
+          <text x="570" y="65" font-size="13" font-weight="700" fill="#1e40af" font-family="Segoe UI">셀에 누적되는 값</text>
+          <line x1="570" y1="75" x2="840" y2="75" stroke="#e2e8f0"/>
+
+          <text x="570" y="98" font-size="11" font-weight="700" fill="#374151" font-family="JetBrains Mono">cellX = (x - minX) / grid</text>
+          <text x="570" y="116" font-size="11" font-weight="700" fill="#374151" font-family="JetBrains Mono">cellY = (y - minY) / grid</text>
+          <text x="570" y="134" font-size="11" font-weight="700" fill="#374151" font-family="JetBrains Mono">idx   = cellY * width + cellX</text>
+
+          <line x1="570" y1="148" x2="840" y2="148" stroke="#e2e8f0"/>
+
+          <text x="570" y="170" font-size="11" font-weight="700" fill="#dc2626" font-family="JetBrains Mono">maxHeight</text>
+          <text x="700" y="170" font-size="11" fill="#374151">← max(maxHeight, z)</text>
+
+          <text x="570" y="188" font-size="11" font-weight="700" fill="#dc2626" font-family="JetBrains Mono">minHeight</text>
+          <text x="700" y="188" font-size="11" fill="#374151">← min(minHeight, z)</text>
+
+          <text x="570" y="206" font-size="11" font-weight="700" fill="#dc2626" font-family="JetBrains Mono">heightSum</text>
+          <text x="700" y="206" font-size="11" fill="#374151">+= z</text>
+
+          <text x="570" y="224" font-size="11" font-weight="700" fill="#dc2626" font-family="JetBrains Mono">refSum</text>
+          <text x="700" y="224" font-size="11" fill="#374151">+= reflectivity</text>
+
+          <text x="570" y="242" font-size="11" font-weight="700" fill="#dc2626" font-family="JetBrains Mono">pointCount</text>
+          <text x="700" y="242" font-size="11" fill="#374151">+= 1</text>
+
+          <line x1="570" y1="256" x2="840" y2="256" stroke="#e2e8f0"/>
+          <text x="570" y="278" font-size="11" fill="#64748b" font-style="italic">UI는 height/refl 평균을</text>
+          <text x="570" y="294" font-size="11" fill="#64748b" font-style="italic">heightSum / pointCount로 계산</text>
+        </svg>
+        <div class="diagram-caption">한 셀(파란 박스)에 들어온 점들이 통계값으로 누적되는 모습</div>
+      </div>
+
+      <div class="grid">
+        <div class="card accent-blue">
+          <h3>ROI 경계 처리</h3>
+          <p>
+            상한은 <strong>반열림 구간</strong> <code>[min, max)</code>로 처리합니다.
+            <code>x &gt;= maxX</code>인 점은 버려지고, 경계 위 점이 두 셀에 중복 배정되지 않습니다.
+          </p>
+        </div>
+        <div class="card accent-amber">
+          <h3>float 반올림 방어</h3>
+          <p>
+            <code>(x - minX) / grid</code> 계산 후에도 <code>cellX &gt;= width</code>가 될 수 있어,
+            인덱스 범위 체크를 한 번 더 거칩니다. 안전한 메모리 접근을 위한 마지막 방어선입니다.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6 후보 검출 알고리즘 -->
+    <section class="section" id="sec-6">
+      <h2><span class="num">6</span> 후보 박스 검출 알고리즘</h2>
+      <p>
+        가장 복잡한 단계입니다. fine BEV cell에서 시작해 5개의 sub-step을 거쳐 후보 사각형 리스트를 만듭니다.
+      </p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 940 380" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#059669"/>
+            </marker>
+          </defs>
+
+          <!-- Sub-step A: Coarse downsample -->
+          <rect x="20" y="40" width="170" height="100" rx="10" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+          <text x="105" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="#065f46" font-family="Segoe UI">A. Coarse 다운샘플</text>
+          <text x="105" y="82" text-anchor="middle" font-size="10" fill="#047857">candidateGridSize /</text>
+          <text x="105" y="96" text-anchor="middle" font-size="10" fill="#047857">bevGridSize 비율</text>
+          <text x="105" y="116" text-anchor="middle" font-size="10" fill="#047857">→ 작은 coarse grid</text>
+          <text x="105" y="130" text-anchor="middle" font-size="10" fill="#047857">→ occupied, depth 합계</text>
+
+          <line x1="190" y1="90" x2="222" y2="90" stroke="#059669" stroke-width="2" marker-end="url(#arrow4)"/>
+
+          <!-- Sub-step B: Local density mask -->
+          <rect x="225" y="40" width="170" height="100" rx="10" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+          <text x="310" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="#065f46" font-family="Segoe UI">B. Density mask</text>
+          <text x="310" y="82" text-anchor="middle" font-size="10" fill="#047857">localRadiusCells 반경</text>
+          <text x="310" y="96" text-anchor="middle" font-size="10" fill="#047857">내 occupied 개수가</text>
+          <text x="310" y="116" text-anchor="middle" font-size="10" fill="#047857">minLocalCells 이상</text>
+          <text x="310" y="130" text-anchor="middle" font-size="10" fill="#047857">→ mask 포함 (틈 메우기)</text>
+
+          <line x1="395" y1="90" x2="427" y2="90" stroke="#059669" stroke-width="2" marker-end="url(#arrow4)"/>
+
+          <!-- Sub-step C: BFS connect -->
+          <rect x="430" y="40" width="170" height="100" rx="10" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+          <text x="515" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="#065f46" font-family="Segoe UI">C. BFS 연결</text>
+          <text x="515" y="82" text-anchor="middle" font-size="10" fill="#047857">4-방향 이웃 탐색</text>
+          <text x="515" y="96" text-anchor="middle" font-size="10" fill="#047857">depth 차이 &gt; threshold</text>
+          <text x="515" y="116" text-anchor="middle" font-size="10" fill="#047857">→ 연결 끊음</text>
+          <text x="515" y="130" text-anchor="middle" font-size="10" fill="#047857">(앞/뒤 분리)</text>
+
+          <line x1="600" y1="90" x2="632" y2="90" stroke="#059669" stroke-width="2" marker-end="url(#arrow4)"/>
+
+          <!-- Sub-step D: Filter & convert -->
+          <rect x="635" y="40" width="170" height="100" rx="10" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+          <text x="720" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="#065f46" font-family="Segoe UI">D. 영역 채택</text>
+          <text x="720" y="82" text-anchor="middle" font-size="10" fill="#047857">regionCells &gt;= minRegion</text>
+          <text x="720" y="96" text-anchor="middle" font-size="10" fill="#047857">bbox를 fine 좌표로</text>
+          <text x="720" y="116" text-anchor="middle" font-size="10" fill="#047857">confidence = cells/area</text>
+          <text x="720" y="130" text-anchor="middle" font-size="10" fill="#047857">→ SpssCandidateRegion</text>
+
+          <line x1="720" y1="160" x2="720" y2="178" stroke="#059669" stroke-width="2" marker-end="url(#arrow4)"/>
+
+          <!-- Sub-step E: Sort & limit -->
+          <rect x="635" y="180" width="170" height="80" rx="10" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+          <text x="720" y="202" text-anchor="middle" font-size="12" font-weight="700" fill="#065f46" font-family="Segoe UI">E. 정렬 & 제한</text>
+          <text x="720" y="222" text-anchor="middle" font-size="10" fill="#047857">occupiedCellCount 내림차순</text>
+          <text x="720" y="236" text-anchor="middle" font-size="10" fill="#047857">maxCandidateCount까지만</text>
+          <text x="720" y="250" text-anchor="middle" font-size="10" fill="#047857">id 재부여 (1부터)</text>
+
+          <line x1="635" y1="220" x2="603" y2="220" stroke="#059669" stroke-width="2" marker-end="url(#arrow4)"/>
+
+          <!-- Final output -->
+          <rect x="430" y="180" width="170" height="80" rx="10" fill="#fff" stroke="#059669" stroke-width="2"/>
+          <text x="515" y="208" text-anchor="middle" font-size="13" font-weight="700" fill="#065f46" font-family="Segoe UI">SpssCandidateRegion[]</text>
+          <text x="515" y="228" text-anchor="middle" font-size="11" fill="#047857" font-family="JetBrains Mono">lastCandidates</text>
+          <text x="515" y="245" text-anchor="middle" font-size="10" fill="#047857">→ engine 저장</text>
+
+          <!-- Visual example below -->
+          <text x="105" y="310" text-anchor="middle" font-size="11" font-weight="700" fill="#374151">[ fine grid ]</text>
+          <g transform="translate(20,320)">
+            <rect x="0"  y="0"  width="12" height="12" fill="#cbd5e1"/>
+            <rect x="14" y="0"  width="12" height="12" fill="#cbd5e1"/>
+            <rect x="28" y="0"  width="12" height="12" fill="#9ca3af"/>
+            <rect x="42" y="0"  width="12" height="12" fill="#cbd5e1"/>
+            <rect x="56" y="0"  width="12" height="12" fill="#cbd5e1"/>
+            <rect x="70" y="0"  width="12" height="12" fill="#9ca3af"/>
+            <rect x="84" y="0"  width="12" height="12" fill="#cbd5e1"/>
+            <rect x="98" y="0"  width="12" height="12" fill="#9ca3af"/>
+            <rect x="112" y="0" width="12" height="12" fill="#cbd5e1"/>
+            <rect x="126" y="0" width="12" height="12" fill="#9ca3af"/>
+            <rect x="140" y="0" width="12" height="12" fill="#9ca3af"/>
+            <rect x="154" y="0" width="12" height="12" fill="#cbd5e1"/>
+          </g>
+
+          <line x1="190" y1="328" x2="222" y2="328" stroke="#475569" stroke-width="2" marker-end="url(#arrow4)"/>
+
+          <text x="310" y="310" text-anchor="middle" font-size="11" font-weight="700" fill="#374151">[ coarse + mask ]</text>
+          <g transform="translate(245,320)">
+            <rect x="0"  y="0"  width="20" height="14" fill="#bfdbfe"/>
+            <rect x="22" y="0"  width="20" height="14" fill="#3b82f6"/>
+            <rect x="44" y="0"  width="20" height="14" fill="#bfdbfe"/>
+            <rect x="66" y="0"  width="20" height="14" fill="#3b82f6"/>
+            <rect x="88" y="0"  width="20" height="14" fill="#3b82f6"/>
+            <rect x="110" y="0" width="20" height="14" fill="#bfdbfe"/>
+          </g>
+
+          <line x1="395" y1="328" x2="427" y2="328" stroke="#475569" stroke-width="2" marker-end="url(#arrow4)"/>
+
+          <text x="515" y="310" text-anchor="middle" font-size="11" font-weight="700" fill="#374151">[ BFS 연결 + 박스 ]</text>
+          <g transform="translate(440,318)">
+            <rect x="0" y="0" width="80" height="18" fill="none" stroke="#dc2626" stroke-width="2"/>
+            <rect x="2" y="2" width="14" height="14" fill="#fecaca"/>
+            <rect x="18" y="2" width="14" height="14" fill="#fecaca"/>
+            <rect x="34" y="2" width="14" height="14" fill="#fecaca"/>
+            <rect x="50" y="2" width="14" height="14" fill="#fecaca"/>
+            <rect x="66" y="2" width="12" height="14" fill="#fecaca"/>
+          </g>
+
+          <line x1="600" y1="328" x2="632" y2="328" stroke="#475569" stroke-width="2" marker-end="url(#arrow4)"/>
+
+          <text x="720" y="310" text-anchor="middle" font-size="11" font-weight="700" fill="#374151">[ 후보 박스 결과 ]</text>
+          <g transform="translate(640,318)">
+            <rect x="0"  y="0" width="35" height="18" fill="none" stroke="#059669" stroke-width="2"/>
+            <text x="17" y="13" text-anchor="middle" font-size="9" font-weight="700" fill="#059669" font-family="JetBrains Mono">#1</text>
+            <rect x="40" y="0" width="30" height="18" fill="none" stroke="#059669" stroke-width="2"/>
+            <text x="55" y="13" text-anchor="middle" font-size="9" font-weight="700" fill="#059669" font-family="JetBrains Mono">#2</text>
+            <rect x="75" y="0" width="25" height="18" fill="none" stroke="#059669" stroke-width="2"/>
+            <text x="87" y="13" text-anchor="middle" font-size="9" font-weight="700" fill="#059669" font-family="JetBrains Mono">#3</text>
+          </g>
+        </svg>
+        <div class="diagram-caption">A → B → C → D → E 5-step 흐름과 단계별 시각 변환</div>
+      </div>
+
+      <h3>주요 파라미터</h3>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:240px">파라미터</th>
+            <th style="width:90px">역할</th>
+            <th>의미</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>candidateGridSizeMeters</code></td>
+            <td><span class="badge info">step A</span></td>
+            <td>coarse 격자 한 칸 크기. bev grid보다 클수록 다운샘플 비율 ↑</td>
+          </tr>
+          <tr>
+            <td><code>localRadiusCells</code></td>
+            <td><span class="badge info">step B</span></td>
+            <td>주변을 볼 반경. 0이면 mask 비활성화</td>
+          </tr>
+          <tr>
+            <td><code>minLocalCells</code></td>
+            <td><span class="badge info">step B</span></td>
+            <td>반경 안에 필요한 최소 occupied cell 수</td>
+          </tr>
+          <tr>
+            <td><code>depthThresholdMeters</code></td>
+            <td><span class="badge info">step C</span></td>
+            <td>이웃 셀 간 평균 depth 차이 한계. 클수록 연결 관대</td>
+          </tr>
+          <tr>
+            <td><code>minRegionCells</code></td>
+            <td><span class="badge info">step D</span></td>
+            <td>후보로 인정할 최소 영역 크기. 작은 노이즈 군집 제거</td>
+          </tr>
+          <tr>
+            <td><code>maxCandidateCount</code></td>
+            <td><span class="badge info">step E</span></td>
+            <td>최종 후보 개수 상한. 큰 영역 우선으로 잘림</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note">
+        <strong>confidence 계산:</strong>
+        <code>regionCellCount / boxArea</code> — bounding box를 얼마나 빽빽이 채웠는지를 나타냅니다.
+        1.0에 가까울수록 직사각형에 가까운 영역, 0.5 미만이면 비스듬하거나 흩어진 영역입니다.
+      </div>
+    </section>
+
+    <!-- 7 데이터 구조 관계 -->
+    <section class="section" id="sec-7">
+      <h2><span class="num">7</span> 데이터 구조 관계도</h2>
+      <p>
+        engine은 <code>SpssConfig</code> 하나와 4종의 마지막 결과를 보관합니다.
+        설정은 4개 sub-config로, 결과는 입력 점 → BEV cell → 후보 박스로 흐릅니다.
+      </p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 920 460" xmlns="http://www.w3.org/2000/svg">
+          <!-- SpssEngine root -->
+          <rect x="350" y="20" width="220" height="60" rx="10" fill="#fff" stroke="#0e9fb8" stroke-width="2"/>
+          <text x="460" y="44" text-anchor="middle" font-size="14" font-weight="700" fill="#0c7e94" font-family="Segoe UI">SpssEngine</text>
+          <text x="460" y="62" text-anchor="middle" font-size="11" fill="#0c7e94">magic + config + lastResult</text>
+
+          <!-- SpssConfig -->
+          <line x1="460" y1="80" x2="460" y2="110" stroke="#64748b" stroke-width="1.5"/>
+          <rect x="350" y="115" width="220" height="50" rx="8" fill="#dbeafe" stroke="#2563eb"/>
+          <text x="460" y="138" text-anchor="middle" font-size="13" font-weight="700" fill="#1e40af" font-family="Segoe UI">SpssConfig</text>
+          <text x="460" y="155" text-anchor="middle" font-size="10" fill="#1e3a8a">bev / candidate / alignment / noise</text>
+
+          <!-- Config children -->
+          <line x1="380" y1="165" x2="180" y2="200" stroke="#cbd5e1"/>
+          <rect x="80" y="200" width="200" height="50" rx="6" fill="#fff" stroke="#93c5fd"/>
+          <text x="180" y="220" text-anchor="middle" font-size="12" font-weight="700" fill="#1e40af" font-family="JetBrains Mono">SpssBevConfig</text>
+          <text x="180" y="237" text-anchor="middle" font-size="10" fill="#1e3a8a">gridSize + ROI(min/max X,Y,Z)</text>
+
+          <line x1="420" y1="165" x2="400" y2="200" stroke="#cbd5e1"/>
+          <rect x="300" y="200" width="200" height="50" rx="6" fill="#fff" stroke="#93c5fd"/>
+          <text x="400" y="220" text-anchor="middle" font-size="12" font-weight="700" fill="#1e40af" font-family="JetBrains Mono">SpssCandidateConfig</text>
+          <text x="400" y="237" text-anchor="middle" font-size="10" fill="#1e3a8a">radius/density/depth/maxCount</text>
+
+          <line x1="500" y1="165" x2="620" y2="200" stroke="#cbd5e1"/>
+          <rect x="520" y="200" width="200" height="50" rx="6" fill="#fff" stroke="#93c5fd"/>
+          <text x="620" y="220" text-anchor="middle" font-size="12" font-weight="700" fill="#1e40af" font-family="JetBrains Mono">SpssAlignmentConfig</text>
+          <text x="620" y="237" text-anchor="middle" font-size="10" fill="#1e3a8a">roll/pitch/yaw + projection + flip</text>
+
+          <line x1="540" y1="165" x2="820" y2="200" stroke="#cbd5e1"/>
+          <rect x="740" y="200" width="160" height="50" rx="6" fill="#fff" stroke="#93c5fd"/>
+          <text x="820" y="220" text-anchor="middle" font-size="12" font-weight="700" fill="#1e40af" font-family="JetBrains Mono">SpssNoiseConfig</text>
+          <text x="820" y="237" text-anchor="middle" font-size="10" fill="#1e3a8a">enable + minRefl + minCount</text>
+
+          <!-- lastResult children -->
+          <text x="460" y="290" text-anchor="middle" font-size="12" font-weight="700" fill="#7c4a03" font-family="Segoe UI">— lastResult (ProcessFrame이 갱신) —</text>
+
+          <rect x="40"  y="310" width="200" height="60" rx="6" fill="#fef3c7" stroke="#b45309"/>
+          <text x="140" y="332" text-anchor="middle" font-size="12" font-weight="700" fill="#7c4a03" font-family="JetBrains Mono">lastMapInfo</text>
+          <text x="140" y="350" text-anchor="middle" font-size="10" fill="#a16207">SpssBevMapInfo</text>
+          <text x="140" y="365" text-anchor="middle" font-size="10" fill="#a16207">w × h × requiredCellCount</text>
+
+          <rect x="255" y="310" width="200" height="60" rx="6" fill="#fef3c7" stroke="#b45309"/>
+          <text x="355" y="332" text-anchor="middle" font-size="12" font-weight="700" fill="#7c4a03" font-family="JetBrains Mono">lastAnalysisInfo</text>
+          <text x="355" y="350" text-anchor="middle" font-size="10" fill="#a16207">SpssAnalysisInfo</text>
+          <text x="355" y="365" text-anchor="middle" font-size="10" fill="#a16207">입력/ROI/cell/후보 요약</text>
+
+          <rect x="470" y="310" width="200" height="60" rx="6" fill="#fef3c7" stroke="#b45309"/>
+          <text x="570" y="332" text-anchor="middle" font-size="12" font-weight="700" fill="#7c4a03" font-family="JetBrains Mono">lastCells[]</text>
+          <text x="570" y="350" text-anchor="middle" font-size="10" fill="#a16207">vector&lt;SpssBevCell&gt;</text>
+          <text x="570" y="365" text-anchor="middle" font-size="10" fill="#a16207">w × h cells</text>
+
+          <rect x="685" y="310" width="200" height="60" rx="6" fill="#fef3c7" stroke="#b45309"/>
+          <text x="785" y="332" text-anchor="middle" font-size="12" font-weight="700" fill="#7c4a03" font-family="JetBrains Mono">lastCandidates[]</text>
+          <text x="785" y="350" text-anchor="middle" font-size="10" fill="#a16207">vector&lt;SpssCandidateRegion&gt;</text>
+          <text x="785" y="365" text-anchor="middle" font-size="10" fill="#a16207">최대 maxCandidateCount</text>
+
+          <!-- GetLast arrows -->
+          <text x="460" y="405" text-anchor="middle" font-size="12" font-weight="700" fill="#059669" font-family="Segoe UI">↓  GetLast* API가 호출자 버퍼로 복사  ↓</text>
+
+          <rect x="40"  y="420" width="200" height="30" rx="4" fill="#d1fae5" stroke="#059669"/>
+          <text x="140" y="440" text-anchor="middle" font-size="10" fill="#065f46" font-family="JetBrains Mono">SMC_GetLastBevMapInfo</text>
+
+          <rect x="255" y="420" width="200" height="30" rx="4" fill="#d1fae5" stroke="#059669"/>
+          <text x="355" y="440" text-anchor="middle" font-size="10" fill="#065f46" font-family="JetBrains Mono">SMC_GetLastAnalysisInfo</text>
+
+          <rect x="470" y="420" width="200" height="30" rx="4" fill="#d1fae5" stroke="#059669"/>
+          <text x="570" y="440" text-anchor="middle" font-size="10" fill="#065f46" font-family="JetBrains Mono">SMC_GetLastBevCells</text>
+
+          <rect x="685" y="420" width="200" height="30" rx="4" fill="#d1fae5" stroke="#059669"/>
+          <text x="785" y="440" text-anchor="middle" font-size="10" fill="#065f46" font-family="JetBrains Mono">SMC_GetLastCandidateRegions</text>
+        </svg>
+        <div class="diagram-caption">SpssEngine 내부 — 설정(파랑) + 마지막 결과(주황) → GetLast API로 호출자에게 전달</div>
+      </div>
+    </section>
+
+    <!-- 8 호출 시퀀스 -->
+    <section class="section" id="sec-8">
+      <h2><span class="num">8</span> 호출 시퀀스 다이어그램</h2>
+      <p>호출자와 DLL 사이의 시간 순 메시지 교환입니다. <code>GetLast*</code>는 두 번 호출 패턴(size query → 복사)을 사용합니다.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 880 580" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="seq-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#1e40af"/>
+            </marker>
+            <marker id="seq-arrow-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#059669"/>
+            </marker>
+          </defs>
+
+          <!-- Actor headers -->
+          <rect x="100" y="20" width="180" height="40" rx="6" fill="#dbeafe" stroke="#2563eb"/>
+          <text x="190" y="45" text-anchor="middle" font-size="13" font-weight="700" fill="#1e40af" font-family="Segoe UI">호출자 (Caller)</text>
+
+          <rect x="580" y="20" width="180" height="40" rx="6" fill="#cffafe" stroke="#0e9fb8"/>
+          <text x="670" y="45" text-anchor="middle" font-size="13" font-weight="700" fill="#0c7e94" font-family="Segoe UI">SpssMapCore.dll</text>
+
+          <!-- Lifelines -->
+          <line x1="190" y1="65" x2="190" y2="555" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="670" y1="65" x2="670" y2="555" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
+
+          <!-- 1. Create -->
+          <line x1="195" y1="90" x2="665" y2="90" stroke="#1e40af" stroke-width="1.5" marker-end="url(#seq-arrow)"/>
+          <text x="430" y="83" text-anchor="middle" font-size="11" fill="#1e40af" font-family="JetBrains Mono">SMC_Create(&amp;handle)</text>
+          <line x1="195" y1="115" x2="665" y2="115" stroke="#059669" stroke-width="1.5" stroke-dasharray="4,3" marker-start="url(#seq-arrow-r)"/>
+          <text x="430" y="110" text-anchor="middle" font-size="10" fill="#059669" font-family="JetBrains Mono">handle, OK</text>
+
+          <!-- 2. SetConfig -->
+          <line x1="195" y1="150" x2="665" y2="150" stroke="#1e40af" stroke-width="1.5" marker-end="url(#seq-arrow)"/>
+          <text x="430" y="143" text-anchor="middle" font-size="11" fill="#1e40af" font-family="JetBrains Mono">SMC_SetConfig(handle, &amp;cfg)</text>
+          <line x1="195" y1="175" x2="665" y2="175" stroke="#059669" stroke-width="1.5" stroke-dasharray="4,3" marker-start="url(#seq-arrow-r)"/>
+          <text x="430" y="170" text-anchor="middle" font-size="10" fill="#059669" font-family="JetBrains Mono">OK (config 검증 + clear result)</text>
+
+          <!-- 3. ProcessFrame -->
+          <line x1="195" y1="210" x2="665" y2="210" stroke="#1e40af" stroke-width="1.5" marker-end="url(#seq-arrow)"/>
+          <text x="430" y="203" text-anchor="middle" font-size="11" fill="#1e40af" font-family="JetBrains Mono">SMC_ProcessFrame(handle, points, n)</text>
+
+          <!-- Self loop on DLL -->
+          <path d="M 670 220 Q 740 240 740 260 Q 740 280 670 290" fill="none" stroke="#0e9fb8" stroke-width="1.5"/>
+          <text x="745" y="246" font-size="10" fill="#0c7e94">filter → 변환 → BEV</text>
+          <text x="745" y="262" font-size="10" fill="#0c7e94">→ cell filter → 후보</text>
+          <text x="745" y="278" font-size="10" fill="#0c7e94">내부 lastResult 저장</text>
+
+          <line x1="195" y1="305" x2="665" y2="305" stroke="#059669" stroke-width="1.5" stroke-dasharray="4,3" marker-start="url(#seq-arrow-r)"/>
+          <text x="430" y="300" text-anchor="middle" font-size="10" fill="#059669" font-family="JetBrains Mono">OK (결과는 내부에)</text>
+
+          <!-- 4a. GetLastBevMapInfo (single) -->
+          <line x1="195" y1="340" x2="665" y2="340" stroke="#1e40af" stroke-width="1.5" marker-end="url(#seq-arrow)"/>
+          <text x="430" y="333" text-anchor="middle" font-size="11" fill="#1e40af" font-family="JetBrains Mono">SMC_GetLastBevMapInfo(handle, &amp;mapInfo)</text>
+          <line x1="195" y1="365" x2="665" y2="365" stroke="#059669" stroke-width="1.5" stroke-dasharray="4,3" marker-start="url(#seq-arrow-r)"/>
+          <text x="430" y="360" text-anchor="middle" font-size="10" fill="#059669" font-family="JetBrains Mono">mapInfo {w, h, cellCount}</text>
+
+          <!-- 4b. GetLastBevCells (size query) -->
+          <line x1="195" y1="400" x2="665" y2="400" stroke="#1e40af" stroke-width="1.5" marker-end="url(#seq-arrow)"/>
+          <text x="430" y="393" text-anchor="middle" font-size="11" fill="#1e40af" font-family="JetBrains Mono">SMC_GetLastBevCells(handle, null, 0, &amp;needed)</text>
+          <line x1="195" y1="425" x2="665" y2="425" stroke="#059669" stroke-width="1.5" stroke-dasharray="4,3" marker-start="url(#seq-arrow-r)"/>
+          <text x="430" y="420" text-anchor="middle" font-size="10" fill="#059669" font-family="JetBrains Mono">needed = N (필요 개수)</text>
+
+          <!-- 4c. GetLastBevCells (copy) -->
+          <line x1="195" y1="460" x2="665" y2="460" stroke="#1e40af" stroke-width="1.5" marker-end="url(#seq-arrow)"/>
+          <text x="430" y="453" text-anchor="middle" font-size="11" fill="#1e40af" font-family="JetBrains Mono">SMC_GetLastBevCells(handle, buf, N, &amp;written)</text>
+          <line x1="195" y1="485" x2="665" y2="485" stroke="#059669" stroke-width="1.5" stroke-dasharray="4,3" marker-start="url(#seq-arrow-r)"/>
+          <text x="430" y="480" text-anchor="middle" font-size="10" fill="#059669" font-family="JetBrains Mono">buf에 cells 복사, written = N</text>
+
+          <!-- 5. Destroy -->
+          <line x1="195" y1="520" x2="665" y2="520" stroke="#1e40af" stroke-width="1.5" marker-end="url(#seq-arrow)"/>
+          <text x="430" y="513" text-anchor="middle" font-size="11" fill="#1e40af" font-family="JetBrains Mono">SMC_Destroy(handle)</text>
+          <line x1="195" y1="545" x2="665" y2="545" stroke="#059669" stroke-width="1.5" stroke-dasharray="4,3" marker-start="url(#seq-arrow-r)"/>
+          <text x="430" y="540" text-anchor="middle" font-size="10" fill="#059669" font-family="JetBrains Mono">OK</text>
+        </svg>
+        <div class="diagram-caption">파란 화살표 = 호출, 초록 점선 = 응답 — <code>GetLast*</code>는 size query → 복사 두 번 호출</div>
+      </div>
+
+      <pre><code>SpssHandle h = 0;
+SMC_Create(&amp;h);
+
+SpssConfig cfg{};
+SMC_GetDefaultConfig(&amp;cfg);
+// cfg 수정...
+SMC_SetConfig(h, &amp;cfg);
+
+SMC_ProcessFrame(h, points, n);
+
+SpssBevMapInfo info{};
+SMC_GetLastBevMapInfo(h, &amp;info);
+
+std::int32_t needed = 0;
+SMC_GetLastBevCells(h, nullptr, 0, &amp;needed);
+
+std::vector&lt;SpssBevCell&gt; cells(needed);
+std::int32_t written = 0;
+SMC_GetLastBevCells(h, cells.data(), needed, &amp;written);
+
+SMC_Destroy(h);</code></pre>
+    </section>
+
+    <!-- 9 상태 코드 -->
+    <section class="section" id="sec-9">
+      <h2><span class="num">9</span> 상태 코드와 안전성</h2>
+      <p>
+        모든 공개 API는 <code>std::int32_t</code> 상태 코드를 반환합니다.
+        호출자는 <code>== SMC_STATUS_OK</code>로 판단하고, 그 외는 모두 오류로 처리합니다.
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:120px">값</th>
+            <th style="width:240px">코드</th>
+            <th>의미</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge ok">0</span></td>
+            <td><code>SMC_STATUS_OK</code></td>
+            <td>성공</td>
+          </tr>
+          <tr>
+            <td><span class="badge err">-1</span></td>
+            <td><code>SMC_STATUS_INVALID_ARG</code></td>
+            <td>null 포인터, 음수 개수 등 잘못된 인자</td>
+          </tr>
+          <tr>
+            <td><span class="badge err">-2</span></td>
+            <td><code>SMC_STATUS_OUTPUT_TOO_SMALL</code></td>
+            <td>호출자 버퍼가 필요한 개수보다 작음 (size query로 재시도)</td>
+          </tr>
+          <tr>
+            <td><span class="badge err">-3</span></td>
+            <td><code>SMC_STATUS_INVALID_HANDLE</code></td>
+            <td>handle이 null이거나 magic 검증 실패 (해제된 handle 포함)</td>
+          </tr>
+          <tr>
+            <td><span class="badge err">-4</span></td>
+            <td><code>SMC_STATUS_OUT_OF_MEMORY</code></td>
+            <td><code>bad_alloc</code>을 C ABI 안전한 코드로 변환</td>
+          </tr>
+          <tr>
+            <td><span class="badge warn">-5</span></td>
+            <td><code>SMC_STATUS_CONFIG_OUT_OF_RANGE</code></td>
+            <td>NaN/Inf, 음수 grid, 잘못된 enum 등 계산 불가능한 설정</td>
+          </tr>
+          <tr>
+            <td><span class="badge warn">-100</span></td>
+            <td><code>SMC_STATUS_NOT_IMPLEMENTED</code></td>
+            <td>예약된 미구현 경로</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>안전성 메커니즘</h3>
+      <div class="cards-3">
+        <div class="card accent-green">
+          <h3>handle 검증</h3>
+          <p>
+            모든 handle은 내부에서 <code>magic = "SPSS"</code> 표식으로 검증합니다.
+            <code>Destroy</code> 시점에 magic을 0으로 덮어 use-after-free를 빠르게 잡아냅니다.
+          </p>
+        </div>
+        <div class="card accent-green">
+          <h3>NaN/Inf 차단</h3>
+          <p>
+            모든 설정값에 <code>std::isfinite</code>를 적용해 인덱스 계산이 깨지는 경로를 차단합니다.
+            ROI 안 점 좌표에도 동일하게 적용됩니다.
+          </p>
+        </div>
+        <div class="card accent-green">
+          <h3>오버플로 방지</h3>
+          <p>
+            BEV 크기는 <code>int64</code>로 곱한 뒤 <code>int32</code> 범위 검사를 거칩니다.
+            설정이 너무 크면 <code>CONFIG_OUT_OF_RANGE</code>로 미리 거부합니다.
+          </p>
+        </div>
+        <div class="card accent-green">
+          <h3>예외 차단</h3>
+          <p>
+            <code>ProcessFrame</code>은 <code>bad_alloc</code>을 잡아 <code>OUT_OF_MEMORY</code>로 변환합니다.
+            C ABI 경계 밖으로 C++ 예외가 새지 않습니다.
+          </p>
+        </div>
+        <div class="card accent-green">
+          <h3>경계 처리</h3>
+          <p>
+            ROI는 반열림 <code>[min, max)</code>로 중복 배정을 막고,
+            float 반올림으로 발생할 수 있는 out-of-range 인덱스는 한 번 더 클램프합니다.
+          </p>
+        </div>
+        <div class="card accent-amber">
+          <h3>스레드 안전성</h3>
+          <p>
+            engine 내부에 락이 없습니다. 같은 handle을 여러 스레드가 동시에 호출하면 race가 발생합니다.
+            호출자가 외부 락으로 직렬화하거나, 멀티 핸들을 사용해야 합니다.
+          </p>
+        </div>
+      </div>
+
+      <div class="note info">
+        <strong>UI 호환성:</strong>
+        <code>SMC_GetApiVersion</code>은 현재 <code>11</code>을 반환합니다.
+        LidarInspector UI는 v11 미만 DLL을 로딩하지 않으므로, ABI 변경이 있을 때마다 이 값을 올려야 합니다.
+      </div>
+    </section>
+
+  </main>
+</div>
+</body>
+</html>

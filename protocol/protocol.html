@@ -49,7 +49,8 @@
   .bseg-model { background:rgba(179,157,250,.55); color:#1a1400; width:calc(1/256*100%); min-width:4px; }
   .bseg-frame { background:rgba(42,69,112,.85); color:var(--muted); width:calc(4/256*100%); min-width:18px; }
   .bseg-echo { background:rgba(255,107,107,.22); color:#ffd9d9; width:calc(2/256*100%); min-width:18px; }
-  .bseg-rsv1 { background:rgba(42,69,112,.85); color:var(--muted); width:calc(29/256*100%); }
+  .bseg-rsv1 { background:rgba(42,69,112,.85); color:var(--muted); width:calc(28/256*100%); }
+  .bseg-lidar { background:rgba(46,204,143,.55); color:#001a10; width:calc(1/256*100%); min-width:8px; }
   .bseg-sflag { background:rgba(0,200,255,.55); color:#001820; width:calc(2/256*100%); min-width:10px; }
   .bseg-shapes { background:rgba(46,204,143,.4); color:var(--text); width:calc(210/256*100%); }
   .bar-legend { display:flex; flex-wrap:wrap; gap:8px; }
@@ -71,6 +72,7 @@
   .f-rsv .fc{background:var(--s1);} .f-rsv .fc-strip{background:var(--border);}
   .f-frame .fc{background:rgba(96,165,250,.05);} .f-frame .fc-strip{background:var(--blue);}
   .f-echo .fc{background:rgba(255,107,107,.06);} .f-echo .fc-strip{background:var(--red);}
+  .f-lidar .fc{background:rgba(46,204,143,.06);} .f-lidar .fc-strip{background:var(--green);}
   .f-sflag .fc{background:rgba(0,200,255,.06);} .f-sflag .fc-strip{background:var(--accent);}
   .f-shape .fc{background:rgba(46,204,143,.06);} .f-shape .fc-strip{background:var(--green);}
   .f-geo .fc{background:rgba(96,165,250,.05);} .f-geo .fc-strip{background:var(--blue);}
@@ -80,7 +82,7 @@
 
   .f-magic .fc-name{color:var(--yellow);} .f-model .fc-name{color:var(--purple);}
   .f-rsv .fc-name{color:var(--muted);} .f-frame .fc-name{color:var(--blue);}
-  .f-echo .fc-name{color:var(--red);} .f-sflag .fc-name{color:var(--accent);}
+  .f-echo .fc-name{color:var(--red);} .f-lidar .fc-name{color:var(--green);} .f-sflag .fc-name{color:var(--accent);}
   .f-shape .fc-name{color:var(--green);} .f-geo .fc-name{color:var(--blue);}
   .f-dtype .fc-name{color:var(--purple);} .f-comp .fc-name{color:var(--red);}
   .f-rsv2 .fc-name{color:var(--muted);}
@@ -179,7 +181,8 @@
       <div class="bseg bseg-model">1B</div>
       <div class="bseg bseg-frame">4B</div>
       <div class="bseg bseg-echo">2B</div>
-      <div class="bseg bseg-rsv1">rsv 29B</div>
+      <div class="bseg bseg-rsv1">rsv 28B</div>
+      <div class="bseg bseg-lidar">1B</div>
       <div class="bseg bseg-sflag">2B</div>
       <div class="bseg bseg-shapes">Shape 블록 ×7 - 210 bytes</div>
     </div>
@@ -188,7 +191,8 @@
       <div class="leg"><div class="leg-dot" style="background:rgba(179,157,250,.65)"></div>모델 (1B)</div>
       <div class="leg"><div class="leg-dot" style="background:rgba(96,165,250,.65)"></div>Frame (4B, BE)</div>
       <div class="leg"><div class="leg-dot" style="background:rgba(255,107,107,.65)"></div>echoSource + echoProfile (2B)</div>
-      <div class="leg"><div class="leg-dot" style="background:rgba(42,69,112,.95)"></div>reserved (29B)</div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(42,69,112,.95)"></div>reserved (28B)</div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(46,204,143,.65)"></div>LiDAR 개수 (1B)</div>
       <div class="leg"><div class="leg-dot" style="background:rgba(0,200,255,.65)"></div>ShapeFlag (2B, BE)</div>
       <div class="leg"><div class="leg-dot" style="background:rgba(46,204,143,.55)"></div>Shape ×7 (210B)</div>
     </div>
@@ -243,8 +247,15 @@
     <div class="f-row f-rsv">
       <div class="fc fc-strip"></div><div class="fc fc-name">reserved</div>
       <div class="fc"><span class="pill p-u8">u8</span></div>
-      <div class="fc fc-cnt">29</div><div class="fc"><span class="fc-sz">29</span></div>
+      <div class="fc fc-cnt">28</div><div class="fc"><span class="fc-sz">28</span></div>
       <div class="fc fc-note" style="color:var(--muted)">현재 0으로 채우는 향후 확장 예약 공간</div>
+    </div>
+
+    <div class="f-row f-lidar">
+      <div class="fc fc-strip"></div><div class="fc fc-name">lidarCount</div>
+      <div class="fc"><span class="pill p-u8">u8</span></div>
+      <div class="fc fc-cnt">1</div><div class="fc"><span class="fc-sz">1</span></div>
+      <div class="fc fc-note">병합 데이터에 포함된 LiDAR 개수. DW_LidarSync의 sourceIndex 범위 해석에 사용</div>
     </div>
 
     <div class="f-row f-sflag">
@@ -305,7 +316,7 @@
   <div class="calc-card">
     <div class="calc-title">Byte Size 검증</div>
     <div class="calc-formula">
-      <span class="cf-y">8</span>(RECORDAE) + <span class="cf-p">1</span>(model) + <span class="cf-r">4</span>(frame) + <span class="cf-red">1</span>(echoSource) + <span class="cf-red">1</span>(echoProfile) + <span class="cf-m">29</span>(reserved) + <span class="cf-b">2</span>(shapeFlags)
+      <span class="cf-y">8</span>(RECORDAE) + <span class="cf-p">1</span>(model) + <span class="cf-r">4</span>(frame) + <span class="cf-red">1</span>(echoSource) + <span class="cf-red">1</span>(echoProfile) + <span class="cf-m">28</span>(reserved) + <span class="cf-g">1</span>(lidarCount) + <span class="cf-b">2</span>(shapeFlags)
       + <span class="cf-g">7</span> × [ <span class="cf-g">2</span>(shapeType) + <span class="cf-r">2</span>(W) + <span class="cf-r">2</span>(H) + <span class="cf-p">1</span>(valueType) + <span class="cf-red">1</span>(compression) + <span class="cf-m">22</span>(rsv) ]
       = 46 + 7×30 = 46 + 210
     </div>
